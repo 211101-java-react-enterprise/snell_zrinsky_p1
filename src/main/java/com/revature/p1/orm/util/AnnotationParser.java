@@ -5,7 +5,7 @@ import com.revature.p1.orm.annotations.Table;
 import com.revature.p1.orm.util.types.*;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
+import java.util.ArrayList;
 
 // Create the sqlTable here?
 
@@ -40,23 +40,29 @@ public class AnnotationParser {
      * SQL queries matching the model's annotations.
      * @return SqlTable;
      */
-    public SqlTable generateSqlTable() {
+    public SqlTable generateSqlTable() {https://github.com/211101-java-react-enterprise/snell_zrinsky_p1/tree/dev
         // Set the internal SqlTable parameter
         SqlTable newSqlTable = new SqlTable();
+        ArrayList<SqlColumn> newSqlColumns = new ArrayList<SqlColumn>();
         try {
             // Get Table annotation defined over the passed in user object
             Table table = (Table)object.getAnnotation(Table.class);
             // Get Fields defined in the passed in user object
-            Field[] fields = this.object.getDeclaredFields();
             // Set table name to the name passed into the Table() annotation
             newSqlTable.setName(table.name());
             // Loop over fields to get Column annotations to build Column objects
-            for (Field field: fields) {
-                if(field.isAnnotationPresent(Column.class)) {
-                    Column column = (Column) field.getAnnotation(Column.class);
-                    System.out.println(column.name());
+            for (Field field: this.object.getDeclaredFields()) {
+                if (field.isAnnotationPresent(Column.class)) {
+                    Column column = (Column)field.getAnnotation(Column.class);
+                    SqlColumn newColumn = new SqlColumn();
+                    newColumn.setName(column.name());
+                    newColumn.setUnique(column.isUnique());
+                    newColumn.setNullable(column.isNullable());
+                    newColumn.setType(column.type());
+                    newSqlColumns.add(newColumn);
                 }
             }
+            newSqlTable.setColumns(newSqlColumns);
         } catch (Exception e) {
             e.printStackTrace();
         }
