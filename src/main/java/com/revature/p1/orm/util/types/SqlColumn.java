@@ -1,6 +1,6 @@
 package com.revature.p1.orm.util.types;
 
-public class Column {
+public class SqlColumn {
     private String name;
     // TODO: Replace with enum(?)
     private String type;

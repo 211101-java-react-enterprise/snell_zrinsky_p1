@@ -1,21 +1,20 @@
 package com.revature.p1.orm.util.types;
 
 import java.util.List;
-import com.revature.p1.orm.util.types.Column;
 
 /**
  * Contains information required to define a table in SQL.
  */
-public class Table {
+public class SqlTable {
     private String name;
-    private List<Column> columns;
+    private List<SqlColumn> sqlColumns;
 
-    public Table(String name, List<Column> columns) {
+    public SqlTable(String name, List<SqlColumn> sqlColumns) {
         this.name = name;
-        this.columns = columns;
+        this.sqlColumns = sqlColumns;
     }
 
-    public Table(){
+    public SqlTable(){
         super();
     }
 
@@ -27,11 +26,11 @@ public class Table {
         this.name = name;
     }
 
-    public List<Column> getColumns() {
-        return columns;
+    public List<SqlColumn> getColumns() {
+        return sqlColumns;
     }
 
-    public void setColumns(List<Column> columns) {
-        this.columns = columns;
+    public void setColumns(List<SqlColumn> sqlColumns) {
+        this.sqlColumns = sqlColumns;
     }
 }
