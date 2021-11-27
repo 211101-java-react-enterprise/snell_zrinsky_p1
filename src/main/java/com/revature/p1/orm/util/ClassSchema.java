@@ -1,89 +1,95 @@
 package com.revature.p1.orm.util;
 
-import com.revature.p1.orm.annotations.types.ColumnType;
-import com.revature.p1.orm.util.types.SqlColumn;
+import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
 
-import java.util.List;
+import com.revature.p1.orm.annotations.Column;
+import com.revature.p1.orm.annotations.Table;
 
 /**
  * Contains information required to define a table in SQL.
  * Returns concrete values
  */
 public class ClassSchema {
-    private String name;
-    private List<SqlColumn> sqlColumns;
 
-    public ClassSchema(String name, List<SqlColumn> sqlColumns) {
-        this.name = name;
-        this.sqlColumns = sqlColumns;
+    private static Connection conn;
+    private Class<?> reflectedClass;
+    private Table tableDefinition;
+    private ArrayList<ColumnSchema> columnSchemas;
+
+    public ClassSchema(Class<?> reflectedClass) {
+        this.reflectedClass = reflectedClass;
+        this.tableDefinition = this.reflectedClass.getDeclaredAnnotation(Table.class);
+        for (Field field : this.reflectedClass.getDeclaredFields()) {
+            if (field.isAnnotationPresent(Column.class)) {
+                try {
+                    assert false;
+                    this.columnSchemas.add(new ColumnSchema(field, field.getDeclaredAnnotation(Column.class)));
+                    //TODO: LOG THIS LOOOOG
+                } catch (NullPointerException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
-    public ClassSchema(){
-        super();
+    public static void setConnection(Connection conn) {
+        ClassSchema.conn = conn;
     }
 
-    public String getName() {
-        return name;
+    public void getValuesFromExistingInstance(Object object) throws IllegalAccessException {
+        //TODO: verify that the object is of the correct type
+//        for (Field field : this.fieldDefinitions) {
+//            Object fieldValue = field.get(object);
+//        }
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public Object getNewInstanceFromIdInDatabase(Object obj, String uuid) {
+        try {
+            String sql = String.format("select * from %s where id = %s", this.tableDefinition.name(), uuid);
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                for (ColumnSchema cs : this.columnSchemas) {
+                    //QUESTION: Why tho this smell doe?
+                    cs.field.set(obj, rs.getObject(cs.column.name()));
+                }
+            }
+        } catch (SQLException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+        return obj;
     }
 
-    public List<SqlColumn> getColumns() {
-        return sqlColumns;
-    }
+    private class ColumnSchema {
 
-    public void setColumns(List<SqlColumn> sqlColumns) {
-        this.sqlColumns = sqlColumns;
-    }
+        private Field field;
+        private Column column;
 
-    // Implement a subclass to handle the columns
-    public class Parameter {
-        private String name;
-        private ColumnType type;
-        private String defaultValue;
-        private boolean isNullable;
-        private boolean isUnique;
-
-        public String getName() {
-            return name;
+        public ColumnSchema(Field field, Column column) {
+            this.field = field;
+            this.column = column;
         }
 
-        public void setName(String name) {
-            this.name = name;
+        public Field getField() {
+            return field;
         }
 
-        public ColumnType getType() {
-            return type;
+        public void setField(Field field) {
+            this.field = field;
         }
 
-        public void setType(ColumnType type) {
-            this.type = type;
+        public Column getColumn() {
+            return column;
         }
 
-        public String getDefaultValue() {
-            return defaultValue;
+        public void setColumn(Column column) {
+            this.column = column;
         }
 
-        public void setDefaultValue(String defaultValue) {
-            this.defaultValue = defaultValue;
-        }
-
-        public boolean isNullable() {
-            return isNullable;
-        }
-
-        public void setNullable(boolean nullable) {
-            isNullable = nullable;
-        }
-
-        public boolean isUnique() {
-            return isUnique;
-        }
-
-        public void setUnique(boolean unique) {
-            isUnique = unique;
-        }
     }
 }
