@@ -1,15 +1,15 @@
 package com.revature.p1.orm;
 
-import com.revature.p1.orm.util.AnnotationParser;
+import com.revature.p1.orm.util.AnnotationParserBeta;
 import com.revature.p1.orm.util.types.SqlColumn;
-import com.revature.p1.orm.util.types.SqlTable;
+import com.revature.p1.orm.util.ClassSchema;
 import com.revature.p1.orm.util.types.TestModel;
 
 public class OrmDriver {
 
     public static void main(String[] args) {
         TestModel test = new TestModel();
-        SqlTable sqlTest = new AnnotationParser(test).generateSqlTable();
+        ClassSchema sqlTest = new AnnotationParserBeta(test).generateSqlTable();
         System.out.println(sqlTest.getName());
         for (SqlColumn col: sqlTest.getColumns()) {
             System.out.println("|Field|--------------->>");
