@@ -1,7 +1,8 @@
-.properties
+*.properties
 target/
 .idea/
 *.iml
 out/
 *.jar
 *.class
+*.war
