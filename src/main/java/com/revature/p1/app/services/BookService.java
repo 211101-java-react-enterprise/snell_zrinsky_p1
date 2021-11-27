@@ -12,7 +12,7 @@ public class BookService {
     // Where they import/interact with our library
     private void initialize() {
         // Check to see if this exists in SQL. If not, make it.
-        bookTable = AnnotationParser.parse(Book.class);
+//        bookTable = AnnotationParser.parse(Book.class);
 
     }
 
