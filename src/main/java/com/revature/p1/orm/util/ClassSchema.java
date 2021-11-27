@@ -19,7 +19,7 @@ public class ClassSchema {
     private static Connection conn;
     private Class<?> reflectedClass;
     private Table tableDefinition;
-    private ArrayList<ColumnSchema> columnSchemas;
+    private ArrayList<ColumnSchema> columnSchemas = new ArrayList<ColumnSchema>();
 
     public ClassSchema(Class<?> reflectedClass) {
         this.reflectedClass = reflectedClass;
@@ -27,7 +27,7 @@ public class ClassSchema {
         for (Field field : this.reflectedClass.getDeclaredFields()) {
             if (field.isAnnotationPresent(Column.class)) {
                 try {
-                    assert false;
+                    System.out.println("~~~~~~~~ FLAG ClassSchema L.30 ~~~~~~~~\n" + field.getDeclaredAnnotation(Column.class));
                     this.columnSchemas.add(new ColumnSchema(field, field.getDeclaredAnnotation(Column.class)));
                     //TODO: LOG THIS LOOOOG
                 } catch (NullPointerException e) {
@@ -50,14 +50,19 @@ public class ClassSchema {
 
     public Object getNewInstanceFromIdInDatabase(Object obj, String uuid) {
         try {
-            String sql = String.format("select * from %s where id = %s", this.tableDefinition.name(), uuid);
+            // String sql = String.format("select * from %s where id = %s'", this.tableDefinition.name(), uuid);
+            String sql = String.format("select * from %s where id = ?", this.tableDefinition.name());
             PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, uuid);
             ResultSet rs = pstmt.executeQuery();
+
             if (rs.next()) {
                 for (ColumnSchema cs : this.columnSchemas) {
                     //QUESTION: Why tho this smell doe?
                     cs.field.set(obj, rs.getObject(cs.column.name()));
                 }
+            } else {
+                System.out.println("~~~~~~~~ NO RESULTS RETURNED ~~~~~~~~");
             }
         } catch (SQLException | IllegalAccessException e) {
             e.printStackTrace();
@@ -67,8 +72,8 @@ public class ClassSchema {
 
     private class ColumnSchema {
 
-        private Field field;
-        private Column column;
+        public Field field;
+        public Column column;
 
         public ColumnSchema(Field field, Column column) {
             this.field = field;

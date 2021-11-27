@@ -1,6 +1,6 @@
 package com.revature.p1.orm;
 
-import com.revature.p1.orm.util.AnnotationParserBeta;
+// import com.revature.p1.orm.util.AnnotationParserBeta;
 import com.revature.p1.orm.util.types.SqlColumn;
 import com.revature.p1.orm.util.ClassSchema;
 import com.revature.p1.orm.util.types.TestModel;

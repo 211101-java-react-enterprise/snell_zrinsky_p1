@@ -26,9 +26,9 @@ public class AppTestDriver {
             ClassSchema bookSchema = new ClassSchema(Book.class);
 
             Book newBook = new Book();
-            bookSchema.getNewInstanceFromIdInDatabase(newBook, "433f67b6-46fe-4a09-9cd1-6c0ccd695293");
+            Book bookInstance = (Book)bookSchema.getNewInstanceFromIdInDatabase(newBook, "433f67b6-46fe-4a09-9cd1-6c0ccd695293");
 
-            System.out.println(newBook.title);
+            System.out.println(bookInstance.title);
         } catch (Exception e) {
             e.printStackTrace();
         }

@@ -6,7 +6,7 @@ import com.revature.p1.orm.annotations.Table;
 import com.revature.p1.orm.annotations.types.ColumnType;
 
 // TODO - Default name logic
-@Table(name = "book")
+@Table(name = "books")
 public class Book {
     @Column(name = "id", type = ColumnType.ID, isUnique = true)
     public String id;
