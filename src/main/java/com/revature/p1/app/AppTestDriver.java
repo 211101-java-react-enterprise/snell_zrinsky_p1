@@ -25,8 +25,16 @@ public class AppTestDriver {
             ClassSchema.setConnection(conn);
             ClassSchema bookSchema = new ClassSchema(Book.class);
 
+            // Retrieving SQL data, mapping to a POJO
+            // TODO - Build out ability of user to query through our nonsense
             Book newBook = new Book();
             Book bookInstance = (Book)bookSchema.getNewInstanceFromIdInDatabase(newBook, "433f67b6-46fe-4a09-9cd1-6c0ccd695293");
+
+            // Map POJO to a relational model
+            Book writingBook = new Book("A Grand History of Cheez-Its", "The Baron of Cheddar", 568, "/assets/covers/cheeeeeese.png");
+            bookSchema.insertNewDatabaseRecord(writingBook);
+            bookInstance.title = "Upd8ted T!TL3";
+            bookSchema.updateRecord(bookInstance, bookInstance.id);
 
             System.out.println(bookInstance.title);
         } catch (Exception e) {

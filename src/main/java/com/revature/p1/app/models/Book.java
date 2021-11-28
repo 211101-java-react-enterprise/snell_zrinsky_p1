@@ -4,6 +4,7 @@ package com.revature.p1.app.models;
 import com.revature.p1.orm.annotations.Column;
 import com.revature.p1.orm.annotations.Table;
 import com.revature.p1.orm.annotations.types.ColumnType;
+import java.util.UUID;
 
 // TODO - Default name logic
 @Table(name = "books")
@@ -21,6 +22,14 @@ public class Book {
 
     public Book(String id, String title, String author, int pageCount, String coverImage) {
         this.id = id;
+        this.title = title;
+        this.author = author;
+        this.pageCount = pageCount;
+        this.coverImage = coverImage;
+    }
+
+    public Book(String title, String author, int pageCount, String coverImage){
+        this.id = UUID.randomUUID().toString();
         this.title = title;
         this.author = author;
         this.pageCount = pageCount;
