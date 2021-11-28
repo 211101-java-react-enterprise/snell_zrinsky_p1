@@ -6,13 +6,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
 
-import com.revature.p1.app.models.Book;
 import com.revature.p1.orm.annotations.Column;
 import com.revature.p1.orm.annotations.Table;
-import com.revature.p1.orm.annotations.types.ColumnType;
-
-import javax.xml.transform.Result;
 
 /**
  * Contains information required to define a table in SQL.
@@ -28,10 +26,10 @@ public class ClassSchema {
     private String updateQuery;
     private String deleteQuery;
 
-    public ClassSchema(Class<?> reflectedClass) {
+    public ClassSchema(Class<?> reflectedClass) throws NoSuchMethodException {
         this.reflectedClass = reflectedClass;
         this.tableDefinition = this.reflectedClass.getDeclaredAnnotation(Table.class);
-
+        // this.constructor = this.reflectedClass.getConstructor();
         // The beginning of ourSQL statements
         StringBuilder insertBuilder = new StringBuilder("INSERT INTO " + this.tableDefinition.name() + " ("); // Needs explicit field names, variable field values
         StringBuilder updateBuilder = new StringBuilder("UPDATE " + this.tableDefinition.name() + " SET "); // Needs explicit field names (different format from INSERT) with field values next to it
@@ -85,20 +83,36 @@ public class ClassSchema {
         ClassSchema.conn = conn;
     }
 
-    public void getValuesFromExistingInstance(Object object) throws IllegalAccessException {
-        //TODO: verify that the object is of the correct type
-//        for (Field field : this.fieldDefinitions) {
-//            Object fieldValue = field.get(object);
-//        }
+    public List<Object> createQuery(String querySuffix) throws SQLException {
+        String queryPrefix = "SELECT * FROM " + this.tableDefinition.name();
+        String query = queryPrefix + " " + querySuffix;
+        List<Object> result = new ArrayList<Object>();
+
+        try (PreparedStatement ps = conn.prepareStatement(query)) {
+            ResultSet rs = ps.executeQuery();
+            while (rs.next()) {
+               Object obj = this.reflectedClass.newInstance();
+                for (ColumnSchema cs : this.columnSchemas) {
+                    //QUESTION: Why tho this smell doe?
+                    cs.field.set(obj, rs.getObject(cs.column.name()));
+                    result.add(obj);
+                }
+            }
+            return result;
+        } catch (SQLException | IllegalAccessException  | InstantiationException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     // TODO - Make this standard with our other statements
-    public Object getNewInstanceFromIdInDatabase(Object obj, String uuid) {
-        try {
-            String sql = String.format("select * from %s where id = ?", this.tableDefinition.name());
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, uuid);
-            ResultSet rs = pstmt.executeQuery();
+    public Object getNewInstanceFromIdInDatabase(String uuid) throws InstantiationException, IllegalAccessException {
+        Object obj = this.reflectedClass.newInstance();
+        try (
+                PreparedStatement statement = conn.prepareStatement(String.format("select * from %s where id = ?", this.tableDefinition.name()))
+                ){
+            statement.setString(1, uuid);
+            ResultSet rs = statement.executeQuery();
 
             if (rs.next()) {
                 for (ColumnSchema cs : this.columnSchemas) {
@@ -115,9 +129,10 @@ public class ClassSchema {
     }
 
     public void insertNewDatabaseRecord(Object object) { // Pass in an instance of the appropriate Model class
-        // Taking the string built during the ClassSchema contructor
-        try {
-            PreparedStatement statement = conn.prepareStatement(this.insertQuery);
+        // Taking the string built during the ClassSchema constructor
+        try  (
+                PreparedStatement statement = conn.prepareStatement(this.insertQuery)
+                ){
             for (int i = 1; i <= columnSchemas.size(); i++) {
                 ColumnSchema cs = this.columnSchemas.get(i - 1);
                 // Iterate through the object, get data type passed in through Column annotation
@@ -127,7 +142,12 @@ public class ClassSchema {
                         statement.setString(i, (String)cs.field.get(object));
                         break;
                     case ID:
-                        statement.setString(i, (String)cs.field.get(object));
+                        String id = (String)cs.field.get(object);
+                        if (id == null || id.equals("")) {
+                           statement.setString(i, UUID.randomUUID().toString());
+                        } else {
+                            statement.setString(i, (String) cs.field.get(object));
+                        }
                         break;
                     case INT:
                         statement.setInt(i, (Integer)cs.field.get(object));
@@ -144,9 +164,9 @@ public class ClassSchema {
                     case BOOLEAN:
                         statement.setBoolean(i, (Boolean)cs.field.get(object));
                         break;
-                } ;
+                } 
             }
-            int rs = statement.executeUpdate();
+            statement.executeUpdate();
         } catch (SQLException | IllegalAccessException e) {
             e.printStackTrace();
         }
@@ -180,7 +200,7 @@ public class ClassSchema {
                     case BOOLEAN:
                         statement.setBoolean(i, (Boolean)cs.field.get(object));
                         break;
-                };
+                }
             }
             statement.setString(this.columnSchemas.size() + 1, uuid);
             statement.executeUpdate();
@@ -200,7 +220,7 @@ public class ClassSchema {
         }
     }
 
-    private class ColumnSchema {
+    private static class ColumnSchema {
 
         public Field field;
         public Column column;

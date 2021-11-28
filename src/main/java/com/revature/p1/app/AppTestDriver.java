@@ -7,6 +7,8 @@ import java.io.FileReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 
 public class AppTestDriver {
@@ -28,7 +30,7 @@ public class AppTestDriver {
             // Retrieving SQL data, mapping to a POJO
             // TODO - Build out ability of user to query through our nonsense
             Book newBook = new Book();
-            Book bookInstance = (Book)bookSchema.getNewInstanceFromIdInDatabase(newBook, "433f67b6-46fe-4a09-9cd1-6c0ccd695293");
+            Book bookInstance = (Book)bookSchema.getNewInstanceFromIdInDatabase("433f67b6-46fe-4a09-9cd1-6c0ccd695293");
 
             // Map POJO to a relational model
             Book writingBook = new Book("A Grand History of Cheez-Its", "The Baron of Cheddar", 568, "/assets/covers/cheeeeeese.png");
@@ -37,6 +39,9 @@ public class AppTestDriver {
             bookSchema.updateRecord(bookInstance, bookInstance.id);
 
             System.out.println(bookInstance.title);
+
+            List<Object> result = bookSchema.createQuery("WHERE title = 'Upd8ted T!TL3'");
+            System.out.println(result.get(0).toString());
         } catch (Exception e) {
             e.printStackTrace();
         }
