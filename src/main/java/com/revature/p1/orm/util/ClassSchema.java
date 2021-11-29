@@ -1,6 +1,8 @@
 package com.revature.p1.orm.util;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -16,17 +18,17 @@ import com.revature.p1.orm.annotations.Table;
  * Contains information required to define a table in SQL.
  * Returns concrete values
  */
-public class ClassSchema {
+public class ClassSchema<T> {
 
     private static Connection conn;
-    private Class<?> reflectedClass;
+    private Class<T> reflectedClass;
     private Table tableDefinition;
     private ArrayList<ColumnSchema> columnSchemas = new ArrayList<ColumnSchema>();
     private String insertQuery;
     private String updateQuery;
     private String deleteQuery;
 
-    public ClassSchema(Class<?> reflectedClass) throws NoSuchMethodException {
+    public ClassSchema(Class<T> reflectedClass) throws NoSuchMethodException {
         this.reflectedClass = reflectedClass;
         this.tableDefinition = this.reflectedClass.getDeclaredAnnotation(Table.class);
         // this.constructor = this.reflectedClass.getConstructor();
@@ -83,10 +85,10 @@ public class ClassSchema {
         ClassSchema.conn = conn;
     }
 
-    public List<Object> createQuery(String querySuffix) throws SQLException {
+    public List<T> createQuery(String querySuffix) throws SQLException {
         String queryPrefix = "SELECT * FROM " + this.tableDefinition.name();
         String query = queryPrefix + " " + querySuffix;
-        List<Object> result = new ArrayList<Object>();
+        List<T> result = new ArrayList<>();
 
         try (PreparedStatement ps = conn.prepareStatement(query)) {
             ResultSet rs = ps.executeQuery();
@@ -106,63 +108,66 @@ public class ClassSchema {
     }
 
     // TODO - Make this standard with our other statements
-    public Object getNewInstanceFromIdInDatabase(String uuid) throws InstantiationException, IllegalAccessException {
-        Object obj = this.reflectedClass.newInstance();
-        try (
-                PreparedStatement statement = conn.prepareStatement(String.format("select * from %s where id = ?", this.tableDefinition.name()))
-                ){
+    public T getNewInstanceFromIdInDatabase(String uuid) throws InstantiationException, IllegalAccessException {
+        T obj = this.reflectedClass.newInstance();
+        try (PreparedStatement statement = conn.prepareStatement(String.format("select * from %s where id = ?", this.tableDefinition.name())))
+        {
             statement.setString(1, uuid);
             ResultSet rs = statement.executeQuery();
 
             if (rs.next()) {
                 for (ColumnSchema cs : this.columnSchemas) {
                     //QUESTION: Why tho this smell doe?
-                    cs.field.set(obj, rs.getObject(cs.column.name()));
+
+                    String fieldSetter = "set" + cs.field.getName().substring(0, 0).toUpperCase() + cs.field.getName().substring(1);
+                    Method setter = this.reflectedClass.getMethod(fieldSetter, cs.field.getType());
+                    setter.invoke(obj, rs.getObject(cs.column.name()));
+//                    cs.field.set(obj, rs.getObject(cs.column.name()));
                 }
             } else {
                 System.out.println("~~~~~~~~ NO RESULTS RETURNED ~~~~~~~~");
             }
-        } catch (SQLException | IllegalAccessException e) {
+        } catch (SQLException | IllegalAccessException | NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }
         return obj;
     }
 
-    public void insertNewDatabaseRecord(Object object) { // Pass in an instance of the appropriate Model class
+    public void insertNewDatabaseRecord(T obj) { // Pass in an instance of the appropriate Model class
         // Taking the string built during the ClassSchema constructor
         try  (
                 PreparedStatement statement = conn.prepareStatement(this.insertQuery)
                 ){
             for (int i = 1; i <= columnSchemas.size(); i++) {
                 ColumnSchema cs = this.columnSchemas.get(i - 1);
-                // Iterate through the object, get data type passed in through Column annotation
+                // Iterate through the obj, get data type passed in through Column annotation
 
                 switch (cs.column.type()) {
                     case STRING:
-                        statement.setString(i, (String)cs.field.get(object));
+                        statement.setString(i, (String)cs.field.get(obj));
                         break;
                     case ID:
-                        String id = (String)cs.field.get(object);
+                        String id = (String)cs.field.get(obj);
                         if (id == null || id.equals("")) {
                            statement.setString(i, UUID.randomUUID().toString());
                         } else {
-                            statement.setString(i, (String) cs.field.get(object));
+                            statement.setString(i, (String) cs.field.get(obj));
                         }
                         break;
                     case INT:
-                        statement.setInt(i, (Integer)cs.field.get(object));
+                        statement.setInt(i, (Integer)cs.field.get(obj));
                         break;
                     case DATE:
                         // TODO later
                         break;
                     case FLOAT:
-                        statement.setFloat(i, (Float)cs.field.get(object));
+                        statement.setFloat(i, (Float)cs.field.get(obj));
                         break;
                     case DOUBLE:
-                        statement.setDouble(i, (Double) cs.field.get(object));
+                        statement.setDouble(i, (Double) cs.field.get(obj));
                         break;
                     case BOOLEAN:
-                        statement.setBoolean(i, (Boolean)cs.field.get(object));
+                        statement.setBoolean(i, (Boolean)cs.field.get(obj));
                         break;
                 } 
             }
@@ -172,7 +177,7 @@ public class ClassSchema {
         }
     }
 
-    public void updateRecord(Object object, String uuid) {
+    public void updateRecord(T obj, String uuid) {
         try {
             PreparedStatement statement = conn.prepareStatement(this.updateQuery);
             for (int i = 1; i <= columnSchemas.size(); i++) {
@@ -180,25 +185,25 @@ public class ClassSchema {
 
                 switch (cs.column.type()) {
                     case STRING:
-                        statement.setString(i, (String)cs.field.get(object));
+                        statement.setString(i, (String)cs.field.get(obj));
                         break;
                     case ID:
-                        statement.setString(i, (String)cs.field.get(object));
+                        statement.setString(i, (String)cs.field.get(obj));
                         break;
                     case INT:
-                        statement.setInt(i, (Integer)cs.field.get(object));
+                        statement.setInt(i, (Integer)cs.field.get(obj));
                         break;
                     case DATE:
                         // TODO later
                         break;
                     case FLOAT:
-                        statement.setFloat(i, (Float)cs.field.get(object));
+                        statement.setFloat(i, (Float)cs.field.get(obj));
                         break;
                     case DOUBLE:
-                        statement.setDouble(i, (Double) cs.field.get(object));
+                        statement.setDouble(i, (Double) cs.field.get(obj));
                         break;
                     case BOOLEAN:
-                        statement.setBoolean(i, (Boolean)cs.field.get(object));
+                        statement.setBoolean(i, (Boolean)cs.field.get(obj));
                         break;
                 }
             }
