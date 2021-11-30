@@ -15,6 +15,10 @@ public class QueryManager {
     private static Connection connection;
 
     public static <T> QueryBuilder<T> getQueryBuilder(Class<T> reflectedClass){
+        if (reflectedClass == null) {
+            // TODO - Fancy error message here
+            return null;
+        }
         if (!builderCache.containsKey(reflectedClass)) {
             QueryBuilder newBuilder = new QueryBuilder<>(reflectedClass, connection);
             builderCache.put(reflectedClass, newBuilder);
