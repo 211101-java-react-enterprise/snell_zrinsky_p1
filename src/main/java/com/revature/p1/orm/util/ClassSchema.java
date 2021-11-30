@@ -88,8 +88,6 @@ public class ClassSchema<T> {
 
     /**
      * Allows users the freedom to select records the table as they please.
-     * This feels vulnerable to injection.
-     * Let's define the problem we're trying to solve more clearly so we can find a safer solution
      * @param querySuffix
      * @return A list of generically typed objects
      * @throws SQLException
