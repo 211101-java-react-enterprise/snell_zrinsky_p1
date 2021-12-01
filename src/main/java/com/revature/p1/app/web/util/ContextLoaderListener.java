@@ -43,10 +43,8 @@ public class ContextLoaderListener implements ServletContextListener {
         BookService bookService = new BookService(bookDAO);
         BookServlet bookServlet = new BookServlet(bookService, objectMapper);
 
-        // context.addServlet("BookServlet", bookServlet).addMapping("/book");
-
         ServletContext context = sce.getServletContext();
-        context.addServlet("BookServlet", bookServlet).addMapping("/book");
+        // context.addServlet("BookServlet", bookServlet).addMapping("/book");
 
         logger.info("Application initialized");
     }

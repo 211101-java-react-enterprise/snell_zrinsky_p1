@@ -20,4 +20,21 @@ public class BookDAO {
     public List<Book> findAll() {
         return bookQueryBuilder.createSelectQueryFrom("");
     }
+
+    public List<Book> getById(String uuid) {
+        return bookQueryBuilder.createSelectQueryFrom("WHERE id = " + uuid);
+    }
+
+    public boolean insert(Book book) {
+        // TODO - Check book's UUID is unique
+        return bookQueryBuilder.createInsertQueryFrom(book) > 0;
+    }
+
+    public boolean update(Book book) {
+        return bookQueryBuilder.createUpdateQueryFrom(book) > 0;
+    }
+
+    public boolean delete(Book book) {
+        return bookQueryBuilder.createDeleteQueryFrom(book) > 0;
+    }
 }

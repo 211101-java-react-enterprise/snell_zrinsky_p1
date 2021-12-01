@@ -17,7 +17,23 @@ public class BookService {
         this.bookDAO = bookDAO;
     }
 
-    public List<Book> findAllBooks() {
+    public List<Book> getAllBooks() {
         return bookDAO.findAll();
+    }
+
+    public List<Book> getBookById(String uuid) {
+        return bookDAO.getById(uuid);
+    }
+
+    public boolean insertBook(Book book) {
+        return bookDAO.insert(book);
+    }
+
+    public boolean updateBook(Book book) {
+        return bookDAO.update(book);
+    }
+
+    public boolean deleteBook(Book book) {
+        return bookDAO.delete(book);
     }
 }

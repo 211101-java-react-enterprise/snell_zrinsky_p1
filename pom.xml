@@ -7,6 +7,7 @@
     <groupId>org.revature</groupId>
     <artifactId>snell_zrinsky_p1</artifactId>
     <version>0.0</version>
+    <packaging>war</packaging>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -15,6 +16,25 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <jackson.version>2.12.4</jackson.version>
     </properties>
+
+    <!-- mvn tomcat7:deploy -->
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.tomcat.maven</groupId>
+                    <artifactId>tomcat7-maven-plugin</artifactId>
+                    <version>2.2</version>
+                    <configuration>
+                        <url>http://localhost:8080/manager/text</url>
+                        <server>LocalTomcat</server>
+                        <path>/p1</path>
+                        <update>true</update> <!-- Prevents previously-deployed packages from jamming the canal -->
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
     <dependencies>
         <dependency>
