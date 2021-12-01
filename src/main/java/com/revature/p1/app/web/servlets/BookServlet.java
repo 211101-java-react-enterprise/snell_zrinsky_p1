@@ -17,49 +17,90 @@ import java.util.List;
 // @WebServlet("/book")
 public class BookServlet extends HttpServlet {
 
-    private final BookService bookService;
-    private final ObjectMapper objectMapper;
+    private BookService bookService;
+    private ObjectMapper objectMapper;
 
     public BookServlet(BookService bookService, ObjectMapper objectMapper) {
         this.bookService = bookService;
         this.objectMapper = objectMapper;
     }
 
+//    public BookServlet(){
+//        super();
+//    }
     // doPost -> Create New
     // doGet -> Read
     // doPut -> Update || Replace If Exists
     // doDelete -> Delete
 
-//    @Override
-//    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-//        resp.getWriter().write("<h1>/book works!</h1>");
-//    }
-
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("The other anything");
         resp.getWriter().write("<h1>/book works!</h1>");
     }
 
-//    @Override
-//    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-//        resp.getWriter().write("<h1>/book works!</h1>");
-//    }
-//
-//    @Override
-//    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
-//        boolean successfulDelete = false;
-//
-//        try {
-//            Book targetBook = objectMapper.readValue(req.getInputStream(), Book.class);
-//            successfulDelete = bookService.deleteBook(targetBook);
-//            resp.setStatus(200);
-//        } catch (JsonParseException e) {
-//            resp.setStatus(406); // 406 -> Not acceptable
-//        }
-//        resp.getWriter().write("<h1>" + successfulDelete + "</h1>");
-//        // String payload = objectMapper.writeValueAsString();
-//        // resp.getWriter().write();
-//
-//    }
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("So many anything");
+        boolean successfulDelete = false;
+        resp.getWriter().write("Literally anything hahahahaha");
+        resp.setContentType("application/json");
 
+        try {
+            Book targetBook = objectMapper.readValue(req.getInputStream(), Book.class);
+            // resp.getWriter().write(targetBook.getTitle());
+            successfulDelete = bookService.deleteBook(targetBook);
+            resp.setStatus(200);
+        } catch (Exception e) {
+            resp.getWriter().write(e.getMessage());
+            resp.setStatus(406); // 406 -> Not acceptable
+
+        }
+        resp.getWriter().write("Object deletion is " + successfulDelete);
+        // String payload = objectMapper.writeValueAsString();
+        // resp.getWriter().write();
+
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("So many anything");
+        boolean successfulUpdate = false;
+        resp.getWriter().write("Literally anything hahahahaha");
+        resp.setContentType("application/json");
+
+        try {
+            Book targetBook = objectMapper.readValue(req.getInputStream(), Book.class);
+            // resp.getWriter().write(targetBook.getTitle());
+            successfulUpdate = bookService.updateBook(targetBook);
+            resp.setStatus(200);
+        } catch (Exception e) {
+            resp.getWriter().write(e.getMessage());
+            resp.setStatus(406); // 406 -> Not acceptable
+
+        }
+        resp.getWriter().write("Object deletion is " + successfulUpdate);
+
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        System.out.println("So many anything");
+        boolean successfulInsert = false;
+        resp.getWriter().write("Literally anything hahahahaha");
+        resp.setContentType("application/json");
+
+        try {
+            Book targetBook = objectMapper.readValue(req.getInputStream(), Book.class);
+            // resp.getWriter().write(targetBook.getTitle());
+            successfulInsert = bookService.insertBook(targetBook);
+            resp.setStatus(200);
+        } catch (Exception e) {
+            resp.getWriter().write(e.getMessage());
+            resp.setStatus(406); // 406 -> Not acceptable
+
+        }
+        resp.getWriter().write("Object deletion is " + successfulInsert);
+
+    }
 }

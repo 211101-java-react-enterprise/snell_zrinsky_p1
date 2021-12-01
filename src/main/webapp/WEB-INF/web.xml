@@ -10,23 +10,27 @@
         <welcome-file>index.html</welcome-file>
     </welcome-file-list>
 
-    <!-- SERVLET DEFINITIONS -->
-    <servlet>
-        <servlet-name>BookServlet</servlet-name>
-        <servlet-class>com.revature.p1.app.web.servlets.BookServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>BookServlet</servlet-name>
-        <url-pattern>/book</url-pattern>
-    </servlet-mapping>
+    <listener>
+        <listener-class>com.revature.p1.app.web.util.ContextLoaderListener</listener-class>
+    </listener>
 
-    <servlet>
-        <servlet-name>TomcatTestServlet</servlet-name>
-        <servlet-class>com.revature.p1.app.web.servlets.TomcatTestServlet</servlet-class>
-    </servlet>
-    <servlet-mapping>
-        <servlet-name>TomcatTestServlet</servlet-name>
-        <url-pattern>/test</url-pattern>
-    </servlet-mapping>
+    <!-- SERVLET DEFINITIONS -->
+<!--    <servlet>-->
+<!--        <servlet-name>BookServlet</servlet-name>-->
+<!--        <servlet-class>com.revature.p1.app.web.servlets.BookServlet</servlet-class>-->
+<!--    </servlet>-->
+<!--    <servlet-mapping>-->
+<!--        <servlet-name>BookServlet</servlet-name>-->
+<!--        <url-pattern>/book</url-pattern>-->
+<!--    </servlet-mapping>-->
+
+<!--    <servlet>-->
+<!--        <servlet-name>TomcatTestServlet</servlet-name>-->
+<!--        <servlet-class>com.revature.p1.app.web.servlets.TomcatTestServlet</servlet-class>-->
+<!--    </servlet>-->
+<!--    <servlet-mapping>-->
+<!--        <servlet-name>TomcatTestServlet</servlet-name>-->
+<!--        <url-pattern>/test</url-pattern>-->
+<!--    </servlet-mapping>-->
 
 </web-app>

@@ -25,14 +25,18 @@ public class ContextLoaderListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        System.out.println("init");
         logger.info("Initializing application");
 
         ObjectMapper objectMapper = new ObjectMapper();
-        try (FileReader fr = new FileReader("src/main/java/com/revature/p1/app/resources/db.properties")) {
-            props.load(fr);
+
+        try {
+            Class.forName("org.postgresql.Driver");
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            Properties props = new Properties();
+            props.load(classLoader.getResourceAsStream("db.properties"));
             conn = DriverManager.getConnection(props.getProperty("url"), props.getProperty("username"), props.getProperty("password"));
             // Map POJO to a relational model
-
         } catch (Exception e) {
             logger.error(e.getMessage());
             return;
@@ -44,8 +48,9 @@ public class ContextLoaderListener implements ServletContextListener {
         BookServlet bookServlet = new BookServlet(bookService, objectMapper);
 
         ServletContext context = sce.getServletContext();
-        // context.addServlet("BookServlet", bookServlet).addMapping("/book");
+        context.addServlet("BookServlet", bookServlet).addMapping("/books");
 
         logger.info("Application initialized");
+        System.out.println("done init");
     }
 }
