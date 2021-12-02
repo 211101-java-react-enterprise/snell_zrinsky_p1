@@ -25,32 +25,32 @@ public class ContextLoaderListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
-        System.out.println("init");
-        logger.info("Initializing application");
+//        System.out.println("init");
+//        logger.info("Initializing application");
+//
+//        ObjectMapper objectMapper = new ObjectMapper();
+//
+//        try {
+//            Class.forName("org.postgresql.Driver");
+//            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+//            Properties props = new Properties();
+//            props.load(classLoader.getResourceAsStream("db.properties"));
+//            conn = DriverManager.getConnection(props.getProperty("url"), props.getProperty("username"), props.getProperty("password"));
+//            // Map POJO to a relational model
+//        } catch (Exception e) {
+//            logger.error(e.getMessage());
+//            return;
+//        }
 
-        ObjectMapper objectMapper = new ObjectMapper();
+//        QueryManager.setConnection(conn);
+//        BookDAO bookDAO = new BookDAO(QueryManager.getQueryBuilder(Book.class));
+//        BookService bookService = new BookService(bookDAO);
+//        BookServlet bookServlet = new BookServlet(bookService, objectMapper);
+//
+//        ServletContext context = sce.getServletContext();
+//        context.addServlet("BookServlet", bookServlet).addMapping("/books");
 
-        try {
-            Class.forName("org.postgresql.Driver");
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            Properties props = new Properties();
-            props.load(classLoader.getResourceAsStream("db.properties"));
-            conn = DriverManager.getConnection(props.getProperty("url"), props.getProperty("username"), props.getProperty("password"));
-            // Map POJO to a relational model
-        } catch (Exception e) {
-            logger.error(e.getMessage());
-            return;
-        }
-
-        QueryManager.setConnection(conn);
-        BookDAO bookDAO = new BookDAO(QueryManager.getQueryBuilder(Book.class));
-        BookService bookService = new BookService(bookDAO);
-        BookServlet bookServlet = new BookServlet(bookService, objectMapper);
-
-        ServletContext context = sce.getServletContext();
-        context.addServlet("BookServlet", bookServlet).addMapping("/books");
-
-        logger.info("Application initialized");
-        System.out.println("done init");
+//        logger.info("Application initialized");
+//        System.out.println("done init");
     }
 }
