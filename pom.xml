@@ -6,7 +6,7 @@
 
     <groupId>org.revature</groupId>
     <artifactId>snell_zrinsky_p1</artifactId>
-    <version>0.0</version>
+    <version>0.0.2</version>
     <packaging>war</packaging>
 
     <properties>
@@ -17,7 +17,7 @@
         <jackson.version>2.12.4</jackson.version>
     </properties>
 
-    <!-- mvn tomcat7:deploy -->
+    <!-- $> mvn tomcat7:deploy -->
     <build>
         <pluginManagement>
             <plugins>
@@ -34,6 +34,34 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.6</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>com/revature/p1/app/daos/*</exclude>
+                                <exclude>com/revature/p1/app/models/*</exclude>
+                                <exclude>com/revature/p1/orm/*</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
     <dependencies>
@@ -79,6 +107,11 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <version>5.3.13</version>
         </dependency>
     </dependencies>
 </project>

@@ -1,11 +1,17 @@
 package com.revature.p1.orm.mapped;
 
+import com.revature.p1.orm.annotations.Column;
+
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+class book {
+    @Column(name = "id")
+}
 
 public class MappedClass<T> {
 

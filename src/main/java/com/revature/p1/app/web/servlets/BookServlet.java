@@ -28,8 +28,9 @@ public class BookServlet extends HttpServlet {
 //    public BookServlet(){
 //        super();
 //    }
-    // doPost -> Create New
+
     // doGet -> Read
+    // doPost -> Create New
     // doPut -> Update || Replace If Exists
     // doDelete -> Delete
 

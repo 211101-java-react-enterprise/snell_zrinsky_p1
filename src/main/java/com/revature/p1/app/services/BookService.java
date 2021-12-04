@@ -2,8 +2,6 @@ package com.revature.p1.app.services;
 
 import com.revature.p1.app.daos.BookDAO;
 import com.revature.p1.app.models.Book;
-// TODO - Replace SqlTable with something more sensical
-import com.revature.p1.orm.util.ClassSchema;
 
 import java.util.List;
 
@@ -21,8 +19,8 @@ public class BookService {
         return bookDAO.findAll();
     }
 
-    public List<Book> getBookById(String uuid) {
-        return bookDAO.getById(uuid);
+    public List<Book> getBookById(String book) {
+        return bookDAO.getById(book);
     }
 
     public boolean insertBook(Book book) {
