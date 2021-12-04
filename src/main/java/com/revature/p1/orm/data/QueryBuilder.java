@@ -13,13 +13,13 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 // TODO: Refactor to automatically reflect object id.
 // QOL: Refactor null returns to Option Type.
 
 public class QueryBuilder<T> {
+
     private final Logger logger = Logger.getLogger(Logger.Printer.CONSOLE);
     private final Connection connection;
     private final Class<T> reflectedClass;
@@ -97,7 +97,7 @@ public class QueryBuilder<T> {
         try {
             PreparedStatement statement = this.connection.prepareStatement(queryString);
             return this.createObjectsFrom(statement.executeQuery());
-        } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
+        } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             this.logger.log(Logger.Level.ERROR, "Failed to create select query from user query: " + queryString);
         }
         return new ArrayList<>();
@@ -119,6 +119,7 @@ public class QueryBuilder<T> {
 
     /**
      * Implicitly assumes that the object has an id field of type String
+     *
      * @param object Object to update in the  database
      * @return The number of rows affected by the query
      */
@@ -127,10 +128,10 @@ public class QueryBuilder<T> {
         try (PreparedStatement statement = this.connection.prepareStatement(this.updateQuery)) {
             for (int i = 0; i < this.columnSchemas.size(); i++) {
                 ColumnSchema columnSchema = this.columnSchemas.get(i);
-                this.setStatementValue(i+ 1, columnSchema, object, statement);
+                this.setStatementValue(i + 1, columnSchema, object, statement);
                 this.logger.log(Logger.Level.ERROR, "Update query: " + statement.toString());
                 if (columnSchema.column.type().equals(ColumnType.ID)) {
-                   id = columnSchema.field.get(object).toString();
+                    id = columnSchema.field.get(object).toString();
                 }
             }
             // TODO: This is a hack, implement way to get field from ClassSchema by ColumnType
@@ -151,6 +152,7 @@ public class QueryBuilder<T> {
 
     /**
      * Implicitly assumes that the object has an id field of type String
+     *
      * @param object The object to delete
      * @return The number of rows affected by the query
      */
@@ -169,10 +171,10 @@ public class QueryBuilder<T> {
                 this.logger.log(Logger.Level.DEBUG, "Created delete query: " + this.deleteQuery);
                 statement.executeUpdate();
             } else {
-                throw new NullPointerException( "No id found for object: " + object);
+                throw new NullPointerException("No id found for object: " + object);
             }
 
-        } catch (SQLException | IllegalAccessException  e) {
+        } catch (SQLException | IllegalAccessException e) {
             this.logger.log(Logger.Level.ERROR, "Failed to create delete query for id: " + id);
         }
         return 0;
@@ -195,7 +197,7 @@ public class QueryBuilder<T> {
                 setMethod.invoke(newObject, resultSet.getObject(columnSchema.column.name()));
             }
             instantiatedObjects.add(newObject);
-            this.logger.log(Logger.Level.DEBUG, "Instantiated object: " + newObject.toString());
+            this.logger.log(Logger.Level.DEBUG, "Instantiated object: " + newObject);
         }
         return instantiatedObjects;
     }
