@@ -7,15 +7,12 @@ import com.revature.p1.app.services.BookService;
 import com.revature.p1.app.web.dtos.BooksRequest;
 import com.revature.p1.app.web.dtos.BooksResponse;
 import com.revature.p1.orm.QueryManager;
-import com.revature.p1.orm.data.QueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.List;
 import java.util.Properties;
 
 @RestController
@@ -45,11 +42,14 @@ public class BookController {
 
     }
 
-    @GetMapping(value = "/id/{uuid}", consumes = "application/json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public BooksResponse getBooksById(@PathVariable String uuid){
-        // Get book info from DB
-        //
-        return null;
+    @GetMapping(value = "/{uuid}")
+    public BooksResponse getBooksById(@PathVariable String uuid) {
+        System.out.println(uuid);
+        List<Book> selected = bookService.getBookById(uuid);
+        System.out.println(selected);
+        Book selectedBook = selected.get(0);
+        System.out.println(selectedBook.toString());
+        return new BooksResponse(selectedBook.getId(), selectedBook.getTitle(), selectedBook.getAuthor(), selectedBook.getPageCount(), selectedBook.getCoverImage());
     }
 
     @PostMapping(value = "/")
@@ -58,20 +58,20 @@ public class BookController {
         // Retrieve info from booksRequest
         Book insertedBook = new Book(booksRequest.getUuid(), booksRequest.getTitle(), booksRequest.getAuthor(), booksRequest.getPageCount(), booksRequest.getCoverImage());
         // Do the update logic from bookService
-        if(bookService.insertBook(insertedBook)){
+        if (bookService.insertBook(insertedBook)) {
             return new BooksResponse(insertedBook.getId(), insertedBook.getTitle(), insertedBook.getAuthor(), insertedBook.getPageCount(), insertedBook.getCoverImage());
         } else {
             return null;
         }
     }
 
-    @PutMapping(value = "/id/{uuid}")
+    @PutMapping(value = "/{uuid}")
     public BooksResponse updateBookById(@PathVariable String uuid, @RequestBody BooksRequest booksRequest) {
         System.out.println(booksRequest);
         // Retrieve info from booksRequest
         Book updatedBook = new Book(uuid, booksRequest.getTitle(), booksRequest.getAuthor(), booksRequest.getPageCount(), booksRequest.getCoverImage());
         // Do the update logic from bookService
-        if(bookService.updateBook(updatedBook)){
+        if (bookService.updateBook(updatedBook)) {
             return new BooksResponse(uuid, updatedBook.getTitle(), updatedBook.getAuthor(), updatedBook.getPageCount(), updatedBook.getCoverImage());
         } else {
             return null;
@@ -80,8 +80,8 @@ public class BookController {
     // TODO - Potentially overload so you don't have to pass in the UUID through URL
 
     // TODO - Dusting
-    @DeleteMapping(value = "/delete/{uuid}")
-    public String deleteResponse(@PathVariable String uuid){
+    @DeleteMapping(value = "/{uuid}")
+    public String deleteResponse(@PathVariable String uuid) {
         Book bookToDelete = new Book();
         bookToDelete.setId(uuid);
         this.bookService.deleteBook(bookToDelete);
@@ -89,24 +89,4 @@ public class BookController {
         return "The UUID to delete is " + uuid;
 
     }
-//    @RequestMapping(method = RequestMethod.GET, value = "/id/{uuid}")
-//    public @ResponseBody
-//    String getUuid(@PathVariable String uuid) {
-//        return "Getting book " + uuid;
-//    }
-//
-//    @RequestMapping(method = RequestMethod.PUT, value = "/update/")
-//
-//    @ExceptionHandler
-//    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-//    public void handleRuntimeException(RuntimeException e) {
-//        System.out.println("Caught exception in controller with message: " + e.getMessage());
-//    }
-//
-//    @ExceptionHandler({ArithmeticException.class, ArrayIndexOutOfBoundsException.class })
-//    @ResponseStatus(HttpStatus.SERVICE_UNAVAILABLE)
-//    public void handleSomeExceptions(Exception e) {
-//        System.out.println("Caught more exceptions in controller with message: " + e.getMessage());
-//    }
-
 }
