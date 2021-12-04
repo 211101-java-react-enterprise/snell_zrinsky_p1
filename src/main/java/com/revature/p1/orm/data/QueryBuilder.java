@@ -13,7 +13,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 // TODO: Refactor to automatically reflect object id.
@@ -21,7 +20,7 @@ import java.util.UUID;
 
 public class QueryBuilder<T> {
     private final Logger logger = Logger.getLogger(Logger.Printer.CONSOLE);
-    private final Connection connection;
+    private final Connection conn;
     private final Class<T> reflectedClass;
     private final String insertQuery;
     private final String updateQuery;
@@ -39,7 +38,7 @@ public class QueryBuilder<T> {
             throw new IllegalArgumentException("Class must be annotated with @Table");
         }
         if (reflectedClass != null) {
-            this.connection = conn;
+            this.conn = conn; // ConnectionFactory.getInstance().getConnection();
             this.reflectedClass = reflectedClass;
             this.tableSchema = this.reflectedClass.getAnnotation(Table.class);
             this.deleteQuery = "DELETE FROM " + this.tableSchema.name() + " WHERE id = ?"; // Doesn't need any values - forcing to delete by ID
@@ -95,7 +94,7 @@ public class QueryBuilder<T> {
     public ArrayList<T> createSelectQueryFrom(String userQuery) {
         String queryString = this.selectQuery + " " + userQuery;
         try {
-            PreparedStatement statement = this.connection.prepareStatement(queryString);
+            PreparedStatement statement = this.conn.prepareStatement(queryString);
             return this.createObjectsFrom(statement.executeQuery());
         } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
             this.logger.log(Logger.Level.ERROR, "Failed to create select query from user query: " + queryString);
@@ -108,7 +107,7 @@ public class QueryBuilder<T> {
      * @return Number of rows affected by the query
      */
     public int createInsertQueryFrom(T object) {
-        try (PreparedStatement statement = this.connection.prepareStatement(this.insertQuery)) {
+        try (PreparedStatement statement = this.conn.prepareStatement(this.insertQuery)) {
             this.logger.log(Logger.Level.DEBUG, "Inserting object: " + object.toString());
             return this.createRecordsFrom(statement, object);
         } catch (SQLException e) {
@@ -124,7 +123,7 @@ public class QueryBuilder<T> {
      */
     public int createUpdateQueryFrom(T object) {
         String id = null;
-        try (PreparedStatement statement = this.connection.prepareStatement(this.updateQuery)) {
+        try (PreparedStatement statement = this.conn.prepareStatement(this.updateQuery)) {
             for (int i = 0; i < this.columnSchemas.size(); i++) {
                 ColumnSchema columnSchema = this.columnSchemas.get(i);
                 this.setStatementValue(i+ 1, columnSchema, object, statement);
@@ -156,7 +155,7 @@ public class QueryBuilder<T> {
      */
     public int createDeleteQueryFrom(T object) {
         String id = null;
-        try (PreparedStatement statement = this.connection.prepareStatement(this.deleteQuery)) {
+        try (PreparedStatement statement = this.conn.prepareStatement(this.deleteQuery)) {
             for (int i = 0; i < this.columnSchemas.size(); i++) {
                 ColumnSchema columnSchema = this.columnSchemas.get(i);
                 if (columnSchema.column.type().equals(ColumnType.ID)) {
