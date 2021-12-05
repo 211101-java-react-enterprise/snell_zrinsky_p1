@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 // TODO: Refactor to automatically reflect object id.
@@ -97,13 +98,8 @@ public class QueryBuilder<T> {
             statement.setString(1, uuid);
             this.logger.log(Logger.Level.DEBUG, "Created select query: " + statement);
             return this.createObjectsFrom(statement.executeQuery());
-<<<<<<< HEAD
-        } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            this.logger.log(Logger.Level.ERROR, "Failed to create select query from user query: " + queryString);
-=======
         } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
             this.logger.log(Logger.Level.ERROR, "Failed to create select query from: " + uuid);
->>>>>>> spring-is-servletted
         }
         return new ArrayList<>();
     }
