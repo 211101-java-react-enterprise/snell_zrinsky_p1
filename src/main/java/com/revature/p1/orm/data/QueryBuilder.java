@@ -28,7 +28,6 @@ public class QueryBuilder<T> {
     private final String updateQuery;
     private final String deleteQuery;
     private final String selectQuery;
-    private final Table tableSchema;
     private final ArrayList<ColumnSchema> columnSchemas = new ArrayList<>();
 
     /**
@@ -39,17 +38,18 @@ public class QueryBuilder<T> {
         if (reflectedClass.getAnnotation(Table.class) == null) {
             throw new IllegalArgumentException("Class must be annotated with @Table");
         }
+        Table tableSchema;
         if (reflectedClass != null) {
             this.pool = pool;
             this.reflectedClass = reflectedClass;
-            this.tableSchema = this.reflectedClass.getAnnotation(Table.class);
-            this.deleteQuery = "DELETE FROM " + this.tableSchema.name() + " WHERE id = ?"; // Doesn't need any values - forcing to delete by ID
-            this.selectQuery = "SELECT * FROM " + this.tableSchema.name();
+            tableSchema = this.reflectedClass.getAnnotation(Table.class);
+            this.deleteQuery = "DELETE FROM " + tableSchema.name() + " WHERE id = ?"; // Doesn't need any values - forcing to delete by ID
+            this.selectQuery = "SELECT * FROM " + tableSchema.name();
         } else {
             throw new IllegalArgumentException("Reflected class cannot be null");
         }
-        StringBuilder insertBuilder = new StringBuilder("INSERT INTO " + this.tableSchema.name() + " ("); // Needs explicit field names, variable field values
-        StringBuilder updateBuilder = new StringBuilder("UPDATE " + this.tableSchema.name() + " SET "); // Needs explicit field names (different format from INSERT) with field values next to it
+        StringBuilder insertBuilder = new StringBuilder("INSERT INTO " + tableSchema.name() + " ("); // Needs explicit field names, variable field values
+        StringBuilder updateBuilder = new StringBuilder("UPDATE " + tableSchema.name() + " SET "); // Needs explicit field names (different format from INSERT) with field values next to it
         for (Field field : this.reflectedClass.getDeclaredFields()) {
             if (field.isAnnotationPresent(Column.class)) {
                 try {
@@ -95,8 +95,7 @@ public class QueryBuilder<T> {
      */
     public ArrayList<T> createSelectQueryFrom(String userQuery) {
         String queryString = this.selectQuery + " " + userQuery;
-        try {
-            PreparedStatement statement = this.connection.prepareStatement(queryString);
+        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(queryString)) {
             return this.createObjectsFrom(statement.executeQuery());
         } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
             logger.log(LogLevel.ERROR, "Failed to create select query from user query: " + queryString);
@@ -109,7 +108,7 @@ public class QueryBuilder<T> {
      * @return Number of rows affected by the query
      */
     public int createInsertQueryFrom(T object) {
-        try (PreparedStatement statement = this.connection.prepareStatement(this.insertQuery)) {
+        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.insertQuery)) {
             logger.log(LogLevel.DEBUG, "Inserting object: " + object.toString());
             return this.createRecordsFrom(statement, object);
         } catch (SQLException e) {
@@ -125,7 +124,7 @@ public class QueryBuilder<T> {
      */
     public int createUpdateQueryFrom(T object) {
         String id = null;
-        try (PreparedStatement statement = this.connection.prepareStatement(this.updateQuery)) {
+        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.updateQuery)) {
             for (int i = 0; i < this.columnSchemas.size(); i++) {
                 ColumnSchema columnSchema = this.columnSchemas.get(i);
                 this.setStatementValue(i+ 1, columnSchema, object, statement);
@@ -157,7 +156,7 @@ public class QueryBuilder<T> {
      */
     public int createDeleteQueryFrom(T object) {
         String id = null;
-        try (PreparedStatement statement = this.connection.prepareStatement(this.deleteQuery)) {
+        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.deleteQuery)) {
             for (int i = 0; i < this.columnSchemas.size(); i++) {
                 ColumnSchema columnSchema = this.columnSchemas.get(i);
                 if (columnSchema.column.type().equals(ColumnType.ID)) {
