@@ -1,42 +1,45 @@
 package com.revature.p1.orm.util.logging;
 
-import com.revature.p1.orm.util.logging.types.LogLevel;
-import com.revature.p1.orm.util.logging.types.LogPrinter;
-
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
+import java.util.HashMap;
 
 public class Logger {
 
-    private static Logger logger;
-    private static final String LOG_FILE = "src/main/resources/log/app.log";
+    private static final HashMap<Class<?>,Logger> loggers = new HashMap<>();
 
-    private final Logger.Printer logPrinter;
+    private final Class<?> owner;
+    private final Logger.Level level;
+    private final Logger.Printer printer;
 
-    public Logger(Logger.Printer logPrinter) {
-        if  (logPrinter == null) {
-            this.logPrinter = Logger.Printer.FILE;
-        } else {
-            this.logPrinter = logPrinter;
-        }
+    public Logger(Class<?> owner, Level level, Printer printer) {
+        this.owner = owner;
+        this.level = level;
+        this.printer = printer;
     }
 
-    public static Logger getLogger(Logger.Printer logPrinter) {
-        return new Logger(logPrinter);
+    public static Logger getLogger(Class<?> owner) {
+        if(!loggers.containsKey(owner)) {
+            loggers.put(owner, new Logger(owner, Level.INFO, Printer.CONSOLE));
+        }
+        return loggers.get(owner);
+    }
+
+    public static Logger getLogger(Class<?> owner, Logger.Level level) {
+        if(!loggers.containsKey(owner)) {
+            loggers.put(owner, new Logger(owner, level, Printer.CONSOLE));
+        }
+        return new Logger(owner, level, Logger.Printer.CONSOLE);
+    }
+
+    public static Logger getLogger(Class<?> owner, Logger.Level level, Logger.Printer printer) {
+        if(!loggers.containsKey(owner)) {
+            loggers.put(owner, new Logger(owner, level, printer));
+        }
+        return new Logger(owner, level, printer);
     }
 
     public void log(Logger.Level logLevel, String msg) {
-        String formattedMsg = String.format("[%s]: %s", logLevel.name(), msg);
-        if (this.logPrinter.equals(Logger.Printer.CONSOLE)) {
-            System.out.println(formattedMsg);
-        } else {
-            try (Writer logWriter = new FileWriter(Logger.LOG_FILE, true)) {
-                logWriter.write(formattedMsg + "\n");
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
+        String logMsg = String.format("[%s] [%s] %s", owner.getSimpleName(), logLevel.toString(), msg);
+        System.out.println(logMsg);
     }
 
     public enum Level {
