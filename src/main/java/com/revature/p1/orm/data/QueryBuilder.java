@@ -4,24 +4,25 @@ import com.revature.p1.orm.annotations.Column;
 import com.revature.p1.orm.annotations.Table;
 import com.revature.p1.orm.annotations.types.ColumnType;
 import com.revature.p1.orm.util.logging.Logger;
+import com.revature.p1.orm.util.logging.LogLevel;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 // TODO: Refactor to automatically reflect object id.
 // QOL: Refactor null returns to Option Type.
 
 public class QueryBuilder<T> {
-    private final Logger logger = Logger.getLogger(Logger.Printer.CONSOLE);
-    private final Connection connection;
+
+    private final static Logger logger = Logger.getLogger(QueryBuilder.class);
+
+    private final ConnectionPool pool;
     private final Class<T> reflectedClass;
     private final String insertQuery;
     private final String updateQuery;
@@ -34,12 +35,12 @@ public class QueryBuilder<T> {
      * @param reflectedClass The class to be reflected
      * @throws IllegalArgumentException Thrown if the class to reflect is null or does not have a table annotation
      */
-    public QueryBuilder(Class<T> reflectedClass, Connection conn) throws IllegalArgumentException {
+    public QueryBuilder(Class<T> reflectedClass, ConnectionPool pool) throws IllegalArgumentException {
         if (reflectedClass.getAnnotation(Table.class) == null) {
             throw new IllegalArgumentException("Class must be annotated with @Table");
         }
         if (reflectedClass != null) {
-            this.connection = conn;
+            this.pool = pool;
             this.reflectedClass = reflectedClass;
             this.tableSchema = this.reflectedClass.getAnnotation(Table.class);
             this.deleteQuery = "DELETE FROM " + this.tableSchema.name() + " WHERE id = ?"; // Doesn't need any values - forcing to delete by ID
@@ -82,10 +83,10 @@ public class QueryBuilder<T> {
         insertBuilder.append(")");
         this.insertQuery = insertBuilder.toString();
         this.updateQuery = updateBuilder.toString();
-        this.logger.log(Logger.Level.DEBUG, "Generated Insert Query: " + this.insertQuery);
-        this.logger.log(Logger.Level.DEBUG, "Generated Delete Query: " + this.deleteQuery);
-        this.logger.log(Logger.Level.DEBUG, "Generated Update Query: " + this.updateQuery);
-        this.logger.log(Logger.Level.DEBUG, "Generated Select Query: " + this.selectQuery);
+        logger.log(LogLevel.DEBUG, "Generated Insert Query: " + this.insertQuery);
+        logger.log(LogLevel.DEBUG, "Generated Delete Query: " + this.deleteQuery);
+        logger.log(LogLevel.DEBUG, "Generated Update Query: " + this.updateQuery);
+        logger.log(LogLevel.DEBUG, "Generated Select Query: " + this.selectQuery);
     }
 
     /**
@@ -98,7 +99,7 @@ public class QueryBuilder<T> {
             PreparedStatement statement = this.connection.prepareStatement(queryString);
             return this.createObjectsFrom(statement.executeQuery());
         } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
-            this.logger.log(Logger.Level.ERROR, "Failed to create select query from user query: " + queryString);
+            logger.log(LogLevel.ERROR, "Failed to create select query from user query: " + queryString);
         }
         return new ArrayList<>();
     }
@@ -109,10 +110,10 @@ public class QueryBuilder<T> {
      */
     public int createInsertQueryFrom(T object) {
         try (PreparedStatement statement = this.connection.prepareStatement(this.insertQuery)) {
-            this.logger.log(Logger.Level.DEBUG, "Inserting object: " + object.toString());
+            logger.log(LogLevel.DEBUG, "Inserting object: " + object.toString());
             return this.createRecordsFrom(statement, object);
         } catch (SQLException e) {
-            this.logger.log(Logger.Level.ERROR, "Failed to create insert query from object: " + object.toString());
+            logger.log(LogLevel.ERROR, "Failed to create insert query from object: " + object);
         }
         return 0;
     }
@@ -128,7 +129,7 @@ public class QueryBuilder<T> {
             for (int i = 0; i < this.columnSchemas.size(); i++) {
                 ColumnSchema columnSchema = this.columnSchemas.get(i);
                 this.setStatementValue(i+ 1, columnSchema, object, statement);
-                this.logger.log(Logger.Level.ERROR, "Update query: " + statement.toString());
+                logger.log(LogLevel.ERROR, "Update query: " + statement.toString());
                 if (columnSchema.column.type().equals(ColumnType.ID)) {
                    id = columnSchema.field.get(object).toString();
                 }
@@ -136,13 +137,13 @@ public class QueryBuilder<T> {
             // TODO: This is a hack, implement way to get field from ClassSchema by ColumnType
             if (id != null) {
                 statement.setString(this.columnSchemas.size() + 1, id);
-                this.logger.log(Logger.Level.DEBUG, "Created update query: " + this.updateQuery);
+                logger.log(LogLevel.DEBUG, "Created update query: " + this.updateQuery);
                 return this.createRecordsFrom(statement, object);
             } else {
                 throw new NullPointerException("No id found for object: " + object);
             }
         } catch (SQLException | IllegalAccessException e) {
-            this.logger.log(Logger.Level.ERROR, "Failed to create update query for id: " + id);
+            logger.log(LogLevel.ERROR, "Failed to create update query for id: " + id);
 
         }
         return 0;
@@ -166,14 +167,14 @@ public class QueryBuilder<T> {
             // TODO: This is a hack, implement way to get field from ClassSchema by ColumnType
             if (id != null) {
                 statement.setString(1, id);
-                this.logger.log(Logger.Level.DEBUG, "Created delete query: " + this.deleteQuery);
+                logger.log(LogLevel.DEBUG, "Created delete query: " + this.deleteQuery);
                 statement.executeUpdate();
             } else {
                 throw new NullPointerException( "No id found for object: " + object);
             }
 
         } catch (SQLException | IllegalAccessException  e) {
-            this.logger.log(Logger.Level.ERROR, "Failed to create delete query for id: " + id);
+            logger.log(LogLevel.ERROR, "Failed to create delete query for id: " + id);
         }
         return 0;
     }
@@ -195,7 +196,7 @@ public class QueryBuilder<T> {
                 setMethod.invoke(newObject, resultSet.getObject(columnSchema.column.name()));
             }
             instantiatedObjects.add(newObject);
-            this.logger.log(Logger.Level.DEBUG, "Instantiated object: " + newObject.toString());
+            logger.log(LogLevel.DEBUG, "Instantiated object: " + newObject);
         }
         return instantiatedObjects;
     }
@@ -230,9 +231,9 @@ public class QueryBuilder<T> {
                     statement.setBoolean(index, (Boolean) columnSchema.field.get(object));
                     break;
             }
-            this.logger.log(Logger.Level.DEBUG, "Set statement value: " + columnSchema.field.get(object));
+            logger.log(LogLevel.DEBUG, "Set statement value: " + columnSchema.field.get(object));
         } catch (IllegalAccessException | SQLException e) {
-            this.logger.log(Logger.Level.ERROR, "Failed to set statement value for field: " + columnSchema.field.getName());
+            logger.log(LogLevel.ERROR, "Failed to set statement value for field: " + columnSchema.field.getName());
         }
     }
 
