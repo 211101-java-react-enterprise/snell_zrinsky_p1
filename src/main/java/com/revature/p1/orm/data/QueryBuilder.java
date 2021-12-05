@@ -93,12 +93,13 @@ public class QueryBuilder<T> {
      * @param userQuery Query to append to the end of SELECT * FROM TableName...
      * @return List of objects instantiated from the query
      */
-    public ArrayList<T> createSelectQueryFrom(String userQuery) {
-        String queryString = this.selectQuery + " " + userQuery;
-        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(queryString)) {
+    public List<T> createSelectQueryFrom(String uuid) {
+        try (PreparedStatement statement = this.conn.prepareStatement(this.selectQuery)) {
+            statement.setString(1, uuid);
+            this.logger.log(Logger.DEBUG, "Created select query: " + statement);
             return this.createObjectsFrom(statement.executeQuery());
         } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
-            logger.log(LogLevel.ERROR, "Failed to create select query from user query: " + queryString);
+            logger.log(LogLevel.ERROR, "Failed to create select query from user query: " + uuid);
         }
         return new ArrayList<>();
     }
@@ -208,7 +209,7 @@ public class QueryBuilder<T> {
                     break;
                 case ID:
                     String id = (String) columnSchema.field.get(object);
-                    if (id == null || id.equals("")) {
+                    if (id == null || "".equals(id)) {
                         statement.setString(index, UUID.randomUUID().toString());
                     } else {
                         statement.setString(index, (String) columnSchema.field.get(object));

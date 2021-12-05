@@ -5,13 +5,12 @@ import com.revature.p1.orm.data.QueryBuilder;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import javax.management.Query;
 import java.util.List;
 
 public class BookDAO {
 
-    private final QueryBuilder bookQueryBuilder;
     public static final Logger logger = LogManager.getLogger();
+    private final QueryBuilder<Book> bookQueryBuilder;
 
     public BookDAO(QueryBuilder bookQueryBuilder) {
         this.bookQueryBuilder = bookQueryBuilder;
@@ -21,8 +20,8 @@ public class BookDAO {
         return bookQueryBuilder.createSelectQueryFrom("");
     }
 
-    public List<Book> getById(String uuid) {
-        return bookQueryBuilder.createSelectQueryFrom("WHERE id = " + uuid);
+    public List getById(String uuid) {
+        return bookQueryBuilder.createSelectQueryFrom(uuid);
     }
 
     public boolean insert(Book book) {

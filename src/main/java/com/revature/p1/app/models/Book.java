@@ -10,17 +10,17 @@ import java.util.UUID;
 @Table(name = "books")
 public class Book {
     @Column(name = "id", type = ColumnType.ID, isUnique = true)
-    public String id;
+    private String id;
     @Column(name = "title", type = ColumnType.STRING)
-    public String title;
+    private String title;
     @Column(name = "author", type = ColumnType.STRING)
-    public String author;
+    private String author;
     @Column(name = "page_count", type = ColumnType.INT)
-    public int pageCount;
+    private int pageCount;
     @Column(name = "cover_image", type = ColumnType.STRING)
-    public String coverImage;
+    private String coverImage;
 
-    public Book(String id, String title, String author, int pageCount, String coverImage) {
+    public Book(String id, String title, String author, Integer pageCount, String coverImage) {
         this.id = id;
         this.title = title;
         this.author = author;
@@ -28,7 +28,7 @@ public class Book {
         this.coverImage = coverImage;
     }
 
-    public Book(String title, String author, int pageCount, String coverImage){
+    public Book(String title, String author, Integer pageCount, String coverImage){
         this.id = UUID.randomUUID().toString();
         this.title = title;
         this.author = author;
@@ -64,11 +64,11 @@ public class Book {
         this.author = author;
     }
 
-    public int getPageCount() {
+    public Integer getPageCount() {
         return pageCount;
     }
 
-    public void setPageCount(int pageCount) {
+    public void setPageCount(Integer pageCount) {
         this.pageCount = pageCount;
     }
 
