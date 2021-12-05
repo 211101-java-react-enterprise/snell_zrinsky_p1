@@ -3,8 +3,8 @@ package com.revature.p1.orm.data;
 import com.revature.p1.orm.annotations.Column;
 import com.revature.p1.orm.annotations.Table;
 import com.revature.p1.orm.annotations.types.ColumnType;
-import com.revature.p1.orm.util.logging.Logger;
 import com.revature.p1.orm.util.logging.LogLevel;
+import com.revature.p1.orm.util.logging.Logger;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 // TODO: Refactor to automatically reflect object id.
@@ -90,13 +91,13 @@ public class QueryBuilder<T> {
     }
 
     /**
-     * @param userQuery Query to append to the end of SELECT * FROM TableName...
+     * @param uuid Query to append to the end of SELECT * FROM TableName...
      * @return List of objects instantiated from the query
      */
     public List<T> createSelectQueryFrom(String uuid) {
-        try (PreparedStatement statement = this.conn.prepareStatement(this.selectQuery)) {
+        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.selectQuery)) {
             statement.setString(1, uuid);
-            this.logger.log(Logger.DEBUG, "Created select query: " + statement);
+            logger.log(LogLevel.DEBUG, "Created select query: " + statement);
             return this.createObjectsFrom(statement.executeQuery());
         } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
             logger.log(LogLevel.ERROR, "Failed to create select query from user query: " + uuid);
@@ -158,8 +159,7 @@ public class QueryBuilder<T> {
     public int createDeleteQueryFrom(T object) {
         String id = null;
         try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.deleteQuery)) {
-            for (int i = 0; i < this.columnSchemas.size(); i++) {
-                ColumnSchema columnSchema = this.columnSchemas.get(i);
+            for (ColumnSchema columnSchema : this.columnSchemas) {
                 if (columnSchema.column.type().equals(ColumnType.ID)) {
                     id = columnSchema.field.get(object).toString();
                 }

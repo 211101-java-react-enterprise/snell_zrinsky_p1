@@ -7,13 +7,11 @@ import com.revature.p1.app.services.BookService;
 import com.revature.p1.app.web.dtos.BooksRequest;
 import com.revature.p1.app.web.dtos.BooksResponse;
 import com.revature.p1.orm.QueryManager;
+import com.revature.p1.orm.data.QueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.List;
-import java.util.Properties;
 
 @RestController
 @RequestMapping("/books")
@@ -27,17 +25,12 @@ public class BookController {
         BookService bookService;
 
         try {
-            Class.forName("org.postgresql.Driver");
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-            Properties props = new Properties();
-            props.load(classLoader.getResourceAsStream("db.properties"));
-            Connection conn = DriverManager.getConnection(props.getProperty("url"), props.getProperty("username"), props.getProperty("password"));
-            QueryManager.setConnection(conn);
-            BookDAO bookDAO = new BookDAO(QueryManager.getQueryBuilder(Book.class));
+            QueryManager queryManager = QueryManager.configure("db.properties");
+            QueryBuilder<Book> bookBuilder = queryManager.getQueryBuilder(Book.class);
+            BookDAO bookDAO = new BookDAO(bookBuilder);
             this.bookService = new BookService(bookDAO);
         } catch (Exception e) {
-            // logger.error(e.getMessage());
-            return;
+            e.printStackTrace();
         }
 
     }
