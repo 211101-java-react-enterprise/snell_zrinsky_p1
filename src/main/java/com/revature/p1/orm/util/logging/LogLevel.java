@@ -1,6 +1,6 @@
 package com.revature.p1.orm.util.logging;
 
-public enum Level {
+public enum LogLevel {
     INFO,
     DEBUG,
     ERROR

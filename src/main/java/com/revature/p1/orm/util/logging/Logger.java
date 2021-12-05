@@ -7,37 +7,37 @@ public class Logger {
     private static final HashMap<Class<?>,Logger> loggers = new HashMap<>();
 
     private final Class<?> owner;
-    private final Level level;
-    private final Printer printer;
+    private final LogLevel logLevel;
+    private final LogPrinter logPrinter;
 
-    public Logger(Class<?> owner, Level level, Printer printer) {
+    public Logger(Class<?> owner, LogLevel logLevel, LogPrinter logPrinter) {
         this.owner = owner;
-        this.level = level;
-        this.printer = printer;
+        this.logLevel = logLevel;
+        this.logPrinter = logPrinter;
     }
 
     public static Logger getLogger(Class<?> owner) {
         if(!loggers.containsKey(owner)) {
-            loggers.put(owner, new Logger(owner, Level.INFO, Printer.CONSOLE));
+            loggers.put(owner, new Logger(owner, LogLevel.INFO, LogPrinter.CONSOLE));
         }
         return loggers.get(owner);
     }
 
-    public static Logger getLogger(Class<?> owner, Level level) {
+    public static Logger getLogger(Class<?> owner, LogLevel logLevel) {
         if(!loggers.containsKey(owner)) {
-            loggers.put(owner, new Logger(owner, level, Printer.CONSOLE));
+            loggers.put(owner, new Logger(owner, logLevel, LogPrinter.CONSOLE));
         }
-        return new Logger(owner, level, Printer.CONSOLE);
+        return new Logger(owner, logLevel, LogPrinter.CONSOLE);
     }
 
-    public static Logger getLogger(Class<?> owner, Level level, Printer printer) {
+    public static Logger getLogger(Class<?> owner, LogLevel logLevel, LogPrinter logPrinter) {
         if(!loggers.containsKey(owner)) {
-            loggers.put(owner, new Logger(owner, level, printer));
+            loggers.put(owner, new Logger(owner, logLevel, logPrinter));
         }
-        return new Logger(owner, level, printer);
+        return new Logger(owner, logLevel, logPrinter);
     }
 
-    public void log(Level logLevel, String msg) {
+    public void log(LogLevel logLevel, String msg) {
         String logMsg = String.format("[%s] [%s] %s", owner.getSimpleName(), logLevel.toString(), msg);
         System.out.println(logMsg);
     }
