@@ -7,8 +7,8 @@ public class Logger {
     private static final HashMap<Class<?>,Logger> loggers = new HashMap<>();
 
     private final Class<?> owner;
-    private final Logger.Level level;
-    private final Logger.Printer printer;
+    private final Level level;
+    private final Printer printer;
 
     public Logger(Class<?> owner, Level level, Printer printer) {
         this.owner = owner;
@@ -23,33 +23,23 @@ public class Logger {
         return loggers.get(owner);
     }
 
-    public static Logger getLogger(Class<?> owner, Logger.Level level) {
+    public static Logger getLogger(Class<?> owner, Level level) {
         if(!loggers.containsKey(owner)) {
             loggers.put(owner, new Logger(owner, level, Printer.CONSOLE));
         }
-        return new Logger(owner, level, Logger.Printer.CONSOLE);
+        return new Logger(owner, level, Printer.CONSOLE);
     }
 
-    public static Logger getLogger(Class<?> owner, Logger.Level level, Logger.Printer printer) {
+    public static Logger getLogger(Class<?> owner, Level level, Printer printer) {
         if(!loggers.containsKey(owner)) {
             loggers.put(owner, new Logger(owner, level, printer));
         }
         return new Logger(owner, level, printer);
     }
 
-    public void log(Logger.Level logLevel, String msg) {
+    public void log(Level logLevel, String msg) {
         String logMsg = String.format("[%s] [%s] %s", owner.getSimpleName(), logLevel.toString(), msg);
         System.out.println(logMsg);
     }
 
-    public enum Level {
-        INFO,
-        DEBUG,
-        ERROR
-    }
-
-    public enum Printer {
-        CONSOLE,
-        FILE
-    }
 }
