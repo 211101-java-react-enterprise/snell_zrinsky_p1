@@ -54,9 +54,9 @@ public class MappedProperty<T> {
 
     private static Method reflectAccessor(String prefix, Field field)  {
         String methodName = prefix + field
-                                    .getName()
-                                    .substring(0, 1)
-                                    .toUpperCase() + field
+                .getName()
+                .substring(0, 1)
+                .toUpperCase() + field
                                     .getName()
                                     .substring(1);
         try {

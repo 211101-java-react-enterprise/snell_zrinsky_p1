@@ -1,17 +1,11 @@
 package com.revature.p1.orm.mapped;
 
-import com.revature.p1.orm.annotations.Column;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-class book {
-    @Column(name = "id")
-}
 
 public class MappedClass<T> {
 
@@ -29,13 +23,15 @@ public class MappedClass<T> {
     *  - configuration and branching logic directly benefits from the wider scope of the static context
     *      - as the configuration of anyone new object can be based on the state of previously instantiated objects
     *      - i.e. caching
-    */
-    public static MappedClass<Class<Type>> from(Class<?> clazz) throws NoSuchMethodException  {
+     * @return
+     */
+    @SuppressWarnings("unchecked")
+    public static MappedClass<Type> from(Class<?> clazz) throws NoSuchMethodException  {
         Class<Type> type = (Class<Type>)reflectType(clazz);
         List<MappedProperty<Type>> mappedProperties = Arrays.stream(clazz.getDeclaredFields())
                                                             .map(MappedProperty::from)
                                                             .collect(Collectors.toList());
-        return new MappedClass<Object>(
+        return new MappedClass<>(
                 type,
                 mappedProperties
                 );
