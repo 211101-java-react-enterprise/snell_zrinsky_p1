@@ -13,80 +13,84 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
-// TODO: Refactor to automatically reflect object id.
-// QOL: Refactor null returns to Option Type.
+import java.util.stream.Collectors;
 
 public class QueryBuilder<T> {
 
-    private final static Logger logger = Logger.getLogger(QueryBuilder.class);
+    private static final Logger logger = Logger.getLogger(QueryBuilder.class);
+    private final ConnectionPool connectionPool;
 
-    private final ConnectionPool pool;
-    private final Class<T> reflectedClass;
+    private final Class<T> mappedClass;
+    private final List<MappedProperty> mappedProperties;
     private final String insertQuery;
     private final String updateQuery;
     private final String deleteQuery;
     private final String selectQuery;
-    private final ArrayList<ColumnSchema> columnSchemas = new ArrayList<>();
+    private final String tableName;
+
 
     /**
-     * @param reflectedClass The class to be reflected
-     * @throws IllegalArgumentException Thrown if the class to reflect is null or does not have a table annotation
+     * @param mappedClass The class to be mapped to a relational database table
+     * @throws IllegalArgumentException Thrown if the class to map is null or does not have a table annotation
      */
-    public QueryBuilder(Class<T> reflectedClass, ConnectionPool pool) throws IllegalArgumentException {
-        if (reflectedClass.getAnnotation(Table.class) == null) {
+    public QueryBuilder(Class<T> mappedClass, ConnectionPool connectionPool) throws IllegalArgumentException {
+        if (mappedClass.getAnnotation(Table.class) == null) {
             throw new IllegalArgumentException("Class must be annotated with @Table");
         }
-        Table tableSchema;
-        if (reflectedClass != null) {
-            this.pool = pool;
-            this.reflectedClass = reflectedClass;
-            tableSchema = this.reflectedClass.getAnnotation(Table.class);
-            this.deleteQuery = "DELETE FROM " + tableSchema.name() + " WHERE id = ?"; // Doesn't need any values - forcing to delete by ID
-            this.selectQuery = "SELECT * FROM " + tableSchema.name() + " WHERE id = ?";
-        } else {
-            throw new IllegalArgumentException("Reflected class cannot be null");
-        }
-        StringBuilder insertBuilder = new StringBuilder("INSERT INTO " + tableSchema.name() + " ("); // Needs explicit field names, variable field values
-        StringBuilder updateBuilder = new StringBuilder("UPDATE " + tableSchema.name() + " SET "); // Needs explicit field names (different format from INSERT) with field values next to it
-        for (Field field : this.reflectedClass.getDeclaredFields()) {
-            if (field.isAnnotationPresent(Column.class)) {
-                try {
-                    ColumnSchema columnSchema = new ColumnSchema(field, field.getDeclaredAnnotation(Column.class));
-                    this.columnSchemas.add(columnSchema);
+        logger.log(LogLevel.DEBUG, "Creating QueryBuilder for class: " + mappedClass.getName());
+        this.connectionPool = connectionPool;
+        this.mappedClass = mappedClass;
+        this.mappedProperties = Arrays.stream(mappedClass.getDeclaredFields())
+                .filter(field -> field.getAnnotation(Column.class) != null)
+                .map(MappedProperty::of)
+                .collect(Collectors.toList());
+        logger.log(LogLevel.DEBUG, "Mapped properties: " + this.mappedProperties);
+        this.tableName = mappedClass.getAnnotation(Table.class).name();
+        this.insertQuery = createInsertTemplate();
+        this.deleteQuery = createDeleteTemplate();
+        this.selectQuery = createSelectTemplate();
+        this.updateQuery = createUpdateTemplate();
+    }
 
-                    // Add column names to the building statement
-                    if (this.columnSchemas.size() == 1) {
-                        insertBuilder.append(columnSchema.column.name());
-                        updateBuilder.append(columnSchema.column.name()).append(" = ?"); // Example: SET program = ?, level = ?, &c&c
-                    } else { // The first item shouldn't have a comma before it, the last item shouldn't have a comma after
-                        insertBuilder.append(", ").append(columnSchema.column.name());
-                        updateBuilder.append(", ").append(columnSchema.column.name()).append(" = ?");
-                    }
-                    //TODO: LOG THIS LOOOOG
-                } catch (NullPointerException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        // We have to do a second loop :(
-        insertBuilder.append(") VALUES (");
+    private String createDeleteTemplate() {
+        return String.format("DELETE FROM %s WHERE id = ?", this.tableName);
+    }
+
+    private String createSelectTemplate() {
+        return String.format("SELECT * FROM %s WHERE id = ?", this.tableName);
+    }
+
+    private String createUpdateTemplate() {
+        StringBuilder updateBuilder = new StringBuilder("UPDATE " + this.tableName + " SET ")
+                .append(mappedProperties.get(0).column.name())
+                .append(" = ?");
+        mappedProperties
+                .stream()
+                .skip(1)
+                .forEach(mappedProperty -> updateBuilder
+                        .append(", ")
+                        .append(mappedProperty.column.name())
+                        .append(" = ?"));
         updateBuilder.append(" WHERE id = ?");
-        for (int i = 0; i < columnSchemas.size(); i++) {
-            if (i == 0) {
-                insertBuilder.append("?");
-            } else {
-                insertBuilder.append(", ?");
-            }
-        }
-        insertBuilder.append(")");
-        this.insertQuery = insertBuilder.toString();
-        this.updateQuery = updateBuilder.toString();
-        logger.log(LogLevel.DEBUG, "Generated Insert Query: " + this.insertQuery);
-        logger.log(LogLevel.DEBUG, "Generated Delete Query: " + this.deleteQuery);
-        logger.log(LogLevel.DEBUG, "Generated Update Query: " + this.updateQuery);
-        logger.log(LogLevel.DEBUG, "Generated Select Query: " + this.selectQuery);
+        return updateBuilder.toString();
+    }
+
+    private String createInsertTemplate() {
+        StringBuilder insertBuilder = new StringBuilder("INSERT INTO ")
+                .append(this.tableName)
+                .append(" (");
+        StringBuilder valuesBuilder = new StringBuilder("VALUES (");
+        mappedProperties
+                .forEach(mappedProperty -> {
+                    insertBuilder.append(mappedProperty.column.name()).append(", ");
+                    valuesBuilder.append("?, ");
+                });
+        insertBuilder.delete(insertBuilder.length() - 2, insertBuilder.length());
+        valuesBuilder.delete(valuesBuilder.length() - 2, valuesBuilder.length());
+        insertBuilder.append(") ").append(valuesBuilder.append(")"));
+        return insertBuilder.toString();
     }
 
     /**
@@ -95,11 +99,11 @@ public class QueryBuilder<T> {
      */
     public List<T> createSelectQueryFrom(String uuid) {
         logger.log(LogLevel.DEBUG, "Starting select query for uuid: " + uuid);
-        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.selectQuery)) {
+        try (PreparedStatement statement = this.connectionPool.getConnection().prepareStatement(this.selectQuery)) {
             statement.setString(1, uuid);
             logger.log(LogLevel.DEBUG, "Created select query: " + statement);
             return this.createObjectsFrom(statement.executeQuery());
-        } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
+        } catch (SQLException | InstantiationException | IllegalAccessException  e) {
             logger.log(LogLevel.ERROR, e.getMessage());
         }
         return new ArrayList<>();
@@ -110,10 +114,10 @@ public class QueryBuilder<T> {
      * @return Number of rows affected by the query
      */
     public int createInsertQueryFrom(T object) {
-        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.insertQuery)) {
-            for (int i = 0; i < this.columnSchemas.size(); i++) {
-                ColumnSchema columnSchema = this.columnSchemas.get(i);
-                this.setStatementValue(i+ 1, columnSchema, object, statement);
+        try (PreparedStatement statement = this.connectionPool.getConnection().prepareStatement(this.insertQuery)) {
+            for (int i = 0; i < this.mappedProperties.size(); i++) {
+                MappedProperty mappedProperty = this.mappedProperties.get(i);
+                this.setStatementValue(i+ 1, mappedProperty, object, statement);
                 logger.log(LogLevel.DEBUG, "Current query: " + statement.toString());
             }
             return statement.executeUpdate();
@@ -123,20 +127,19 @@ public class QueryBuilder<T> {
         return 0;
     }
 
-
     /**
      * Implicitly assumes that the object has an id field of type String
      * @param object Object to update in the  database
      * @return The number of rows affected by the query
      */
     public int createUpdateQueryFrom(T object) {
-        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.updateQuery)) {
-            for (int i = 0; i < this.columnSchemas.size(); i++) {
-                ColumnSchema columnSchema = this.columnSchemas.get(i);
-                this.setStatementValue(i+ 1, columnSchema, object, statement);
+        try (PreparedStatement statement = this.connectionPool.getConnection().prepareStatement(this.updateQuery)) {
+            for (int i = 0; i < this.mappedProperties.size(); i++) {
+                MappedProperty mappedProperty = this.mappedProperties.get(i);
+                this.setStatementValue(i+ 1, mappedProperty, object, statement);
                 logger.log(LogLevel.DEBUG, "Current query: " + statement.toString());
-                if (columnSchema.column.type().equals(ColumnType.ID)) {
-                    this.setStatementValue(columnSchemas.size() + 1, columnSchema, object, statement);
+                if (mappedProperty.column.type().equals(ColumnType.ID)) {
+                    this.setStatementValue(mappedProperties.size() + 1, mappedProperty, object, statement);
                 }
             }
             return statement.executeUpdate();
@@ -154,7 +157,7 @@ public class QueryBuilder<T> {
      */
     public int createDeleteQueryFrom(String uuid) {
         logger.log(LogLevel.DEBUG, "Starting delete query for uuid: " + uuid);
-        try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.deleteQuery)) {
+        try (PreparedStatement statement = this.connectionPool.getConnection().prepareStatement(this.deleteQuery)) {
             statement.setString(1, uuid);
             return statement.executeUpdate();
         } catch (SQLException e) {
@@ -164,67 +167,135 @@ public class QueryBuilder<T> {
     }
 
     private int createRecordsFrom(PreparedStatement statement, T object) throws SQLException {
-        for (int i = 0; i < this.columnSchemas.size(); i++) {
-            ColumnSchema columnSchema = this.columnSchemas.get(i);
-            this.setStatementValue(i + 1, columnSchema, object, statement);
+        for (int i = 0; i < this.mappedProperties.size(); i++) {
+            MappedProperty mappedProperty = this.mappedProperties.get(i);
+            this.setStatementValue(i + 1, mappedProperty, object, statement);
             logger.log(LogLevel.DEBUG, "Created statement: " + statement.toString());
         }
         return statement.executeUpdate();
     }
 
-    private ArrayList<T> createObjectsFrom(ResultSet resultSet) throws InstantiationException, IllegalAccessException, SQLException, InvocationTargetException, NoSuchMethodException {
+    private ArrayList<T> createObjectsFrom(ResultSet resultSet) throws InstantiationException, IllegalAccessException, SQLException {
+        logger.log(LogLevel.DEBUG, "Starting to create objects from result set");
         ArrayList<T> instantiatedObjects = new ArrayList<>();
         while (resultSet.next()) {
-            T newObject = this.reflectedClass.newInstance();
-            for (ColumnSchema columnSchema : this.columnSchemas) {
-                Method setMethod = columnSchema.reflectSetter(this.reflectedClass);
-                setMethod.invoke(newObject, resultSet.getObject(columnSchema.column.name()));
-            }
+            T newObject = mappedClass.newInstance();
+            mappedProperties.forEach(mappedProperty -> {
+                try {
+                    mappedProperty.invokeSet(newObject, resultSet.getObject(mappedProperty.getName()));
+                } catch (InvocationTargetException | IllegalAccessException | SQLException e) {
+                    logger.log(LogLevel.ERROR, "Failed to invoke setter for class: " + this.getClass() + " property: " + mappedProperty.getName());
+                }
+            });
             instantiatedObjects.add(newObject);
-            logger.log(LogLevel.DEBUG, "Instantiated object: " + newObject);
+            logger.log(LogLevel.DEBUG, "Created object: " + newObject);
         }
         return instantiatedObjects;
     }
 
-    private void setStatementValue(int index, ColumnSchema columnSchema, T object, PreparedStatement statement) {
+    private void setStatementValue(int index, MappedProperty mappedProperty, T object, PreparedStatement statement) {
         try {
-            switch (columnSchema.column.type()) {
+            switch (mappedProperty.column.type()) {
                 case ID:
                 case STRING:
-                    statement.setString(index, (String) columnSchema.field.get(object));
+                    statement.setString(index, (String) mappedProperty.field.get(object));
                     break;
                 case INT:
-                    statement.setInt(index, (int) columnSchema.field.get(object));
+                    statement.setInt(index, (int) mappedProperty.field.get(object));
                     break;
                 case BOOLEAN:
-                    statement.setBoolean(index, (Boolean) columnSchema.field.get(object));
+                    statement.setBoolean(index, (Boolean) mappedProperty.field.get(object));
                     break;
                 default:
             }
-            logger.log(LogLevel.DEBUG, "Set statement value: " + columnSchema.field.get(object));
+            logger.log(LogLevel.DEBUG, "Set statement value: " + mappedProperty.field.get(object));
         } catch (IllegalAccessException | SQLException e) {
-            logger.log(LogLevel.ERROR, "Failed to statement value for object: " + object + "\n  at index: " + index + "\n for column: " + columnSchema.column.name() + "\n with type: " + columnSchema.column.type());
+            logger.log(LogLevel.ERROR, "Failed to statement value for object: " + object + "\n  at index: " + index + "\n for column: " + mappedProperty.column.name() + "\n with type: " + mappedProperty.column.type());
         }
     }
 
-    private static class ColumnSchema {
+    private static class MappedProperty {
 
-        public Field field;
-        public Column column;
+        private final String name;
+        private final Class<?> mappedClass;
+        private final Field field;
+        private final Column column;
+        private final ColumnType mappedType;
+        private final Method setter;
+        private final Method getter;
 
-        public ColumnSchema(Field field, Column column) {
+        private MappedProperty(Field field, Column column, Class<?> mappedClass, String name, Method setter, Method getter) {
+            if (field.getDeclaredAnnotation(Column.class) == null) {
+                throw new IllegalArgumentException("Properties must be annotated with @Column");
+            }
             this.field = field;
             this.column = column;
+            this.mappedType = column.type();
+            this.mappedClass = mappedClass;
+            this.name = name;
+            this.setter = setter;
+            this.getter = getter;
         }
 
-        public <T> Method reflectSetter(Class<T> reflectedClass) throws NoSuchMethodException {
-            String fieldSetter = "set" + field.getName().substring(0, 1).toUpperCase() + this.field.getName().substring(1);
-            return reflectedClass.getMethod(fieldSetter, field.getType());
+        public static MappedProperty of(Field field) {
+            logger.log(LogLevel.DEBUG, "Creating mapped property for field: " + field.getName());
+            String name = field.getName();
+            Class<?> mappedClass = field.getDeclaringClass();
+            Column column = field.getDeclaredAnnotation(Column.class);
+            String methodNameSuffix = field.getName().substring(0, 1).toUpperCase() + field.getName().substring(1);
+            Method setter = null;
+            Method getter = null;
+            try {
+                setter = mappedClass.getMethod("set" + methodNameSuffix, field.getType());
+                getter = mappedClass.getMethod("get" + methodNameSuffix);
+            } catch (NoSuchMethodException e) {
+                logger.log(LogLevel.WARN, "Failed to find setter in mapped class: " + mappedClass.getName() + " for field: " + field.getName());
+            }
+            return new MappedProperty(
+                    field,
+                    column,
+                    mappedClass,
+                    name,
+                    setter,
+                    getter
+            );
         }
 
-        public <T> Method reflectGetter(Class<T> reflectedClass) throws NoSuchMethodException {
-            String fieldSetter = "get" + field.getName().substring(0, 1).toUpperCase() + this.field.getName().substring(1);
-            return reflectedClass.getMethod(fieldSetter, field.getType());
+        public void setValue(Object object, Object value) {
+            try {
+                this.setter.invoke(object, value);
+            } catch (IllegalAccessException | InvocationTargetException e) {
+                logger.log(LogLevel.ERROR, "Failed to set value: " + value + " for object: " + object);
+            }
         }
+
+        public Field getField() {
+            return field;
+        }
+
+        public Column getColumn() {
+            return column;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public Class<?> getMappedClass() {
+            return mappedClass;
+        }
+
+        public ColumnType getMappedType() {
+            return mappedType;
+        }
+
+        public Object invokeSet(Object instance, Object value) throws InvocationTargetException, IllegalAccessException {
+            return this.setter.invoke(instance, value);
+        }
+
+        public <T> Object invokeGet(Object instance) throws InvocationTargetException, IllegalAccessException {
+            return this.getter.invoke(instance);
+        }
+
     }
 }
