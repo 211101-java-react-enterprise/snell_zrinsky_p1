@@ -33,7 +33,7 @@ public class BookDAO {
         return bookQueryBuilder.createUpdateQueryFrom(book) > 0;
     }
 
-    public boolean delete(Book book) {
-        return bookQueryBuilder.createDeleteQueryFrom(book) > 0;
+    public boolean delete(String uuid) {
+        return bookQueryBuilder.createDeleteQueryFrom(uuid) > 0;
     }
 }

@@ -5,7 +5,7 @@ public class BooksResponse {
     private String uuid;
     private String title;
     private String author;
-    private int pageCount;
+    private Integer pageCount;
     private String coverImage;
 
     public BooksResponse(String uuid, String title, String author, int pageCount, String coverImage) {

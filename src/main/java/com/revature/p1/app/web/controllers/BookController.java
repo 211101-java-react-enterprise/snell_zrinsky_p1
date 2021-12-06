@@ -1,6 +1,5 @@
 package com.revature.p1.app.web.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.revature.p1.app.daos.BookDAO;
 import com.revature.p1.app.models.Book;
 import com.revature.p1.app.services.BookService;
@@ -12,18 +11,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/books")
 public class BookController {
-
     private BookService bookService;
 
     @Autowired
     public BookController() {
-        ObjectMapper objectMapper = new ObjectMapper();
-        BookService bookService;
-
         try {
             QueryManager queryManager = QueryManager.configure("db.properties");
             QueryBuilder<Book> bookBuilder = queryManager.getQueryBuilder(Book.class);
@@ -32,10 +28,9 @@ public class BookController {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
-    @GetMapping(value = "/{uuid}")
+    @GetMapping(value = "")
     public BooksResponse getBooksById(@PathVariable String uuid) {
         System.out.println(uuid);
         List<Book> selected = bookService.getBookById(uuid);
@@ -45,11 +40,12 @@ public class BookController {
         return new BooksResponse(selectedBook.getId(), selectedBook.getTitle(), selectedBook.getAuthor(), selectedBook.getPageCount(), selectedBook.getCoverImage());
     }
 
-    @PostMapping(value = "/")
+    @PostMapping(value = "")
     public BooksResponse insertBook(@RequestBody BooksRequest booksRequest) {
-        System.out.println(booksRequest);
+        System.out.println("Book Request: " + booksRequest);
         // Retrieve info from booksRequest
-        Book insertedBook = new Book(booksRequest.getUuid(), booksRequest.getTitle(), booksRequest.getAuthor(), booksRequest.getPageCount(), booksRequest.getCoverImage());
+        Book insertedBook = new Book(booksRequest.getTitle(), booksRequest.getAuthor(), booksRequest.getPageCount(), booksRequest.getCoverImage());
+        System.out.println("Inserted Book: " + insertedBook);
         // Do the update logic from bookService
         if (bookService.insertBook(insertedBook)) {
             return new BooksResponse(insertedBook.getId(), insertedBook.getTitle(), insertedBook.getAuthor(), insertedBook.getPageCount(), insertedBook.getCoverImage());
@@ -70,16 +66,12 @@ public class BookController {
             return null;
         }
     }
-    // TODO - Potentially overload so you don't have to pass in the UUID through URL
 
-    // TODO - Dusting
     @DeleteMapping(value = "/{uuid}")
     public String deleteResponse(@PathVariable String uuid) {
         Book bookToDelete = new Book();
-        bookToDelete.setId(uuid);
-        this.bookService.deleteBook(bookToDelete);
-
+        bookToDelete.setId(UUID.fromString(uuid).toString());
+        this.bookService.deleteBook(uuid);
         return "The UUID to delete is " + uuid;
-
     }
 }

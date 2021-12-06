@@ -1,13 +1,11 @@
 package com.revature.p1.app.web.dtos;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 public class BooksRequest {
 
     private String uuid;
     private String title;
     private String author;
-    private int pageCount;
+    private Integer pageCount;
     private String coverImage;
 
     public BooksRequest(String uuid, String title, String author, int pageCount, String coverImage) {

@@ -17,4 +17,3 @@ values ('433f67b6-46fe-4a09-9cd1-6c0ccd695294', E'The Wiseman's Fear', 'FINISH Y
 insert into books(id, title, author, cover_image, page_count)
 values ('433f67b6-46fe-4a09-9cd1-6c0ccd695295', E'Very Impressive Sounding Book I am so Well Read', 'Kurt Spelled-Correctly', 'assets/copyright-infringment3.jpg', 422);
 
-select * from books;

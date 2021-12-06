@@ -14,7 +14,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 // TODO: Refactor to automatically reflect object id.
 // QOL: Refactor null returns to Option Type.
@@ -45,7 +44,7 @@ public class QueryBuilder<T> {
             this.reflectedClass = reflectedClass;
             tableSchema = this.reflectedClass.getAnnotation(Table.class);
             this.deleteQuery = "DELETE FROM " + tableSchema.name() + " WHERE id = ?"; // Doesn't need any values - forcing to delete by ID
-            this.selectQuery = "SELECT * FROM " + tableSchema.name();
+            this.selectQuery = "SELECT * FROM " + tableSchema.name() + " WHERE id = ?";
         } else {
             throw new IllegalArgumentException("Reflected class cannot be null");
         }
@@ -95,12 +94,13 @@ public class QueryBuilder<T> {
      * @return List of objects instantiated from the query
      */
     public List<T> createSelectQueryFrom(String uuid) {
+        logger.log(LogLevel.DEBUG, "Starting select query for uuid: " + uuid);
         try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.selectQuery)) {
             statement.setString(1, uuid);
             logger.log(LogLevel.DEBUG, "Created select query: " + statement);
             return this.createObjectsFrom(statement.executeQuery());
         } catch (SQLException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException  e) {
-            logger.log(LogLevel.ERROR, "Failed to create select query from user query: " + uuid);
+            logger.log(LogLevel.ERROR, e.getMessage());
         }
         return new ArrayList<>();
     }
@@ -111,13 +111,18 @@ public class QueryBuilder<T> {
      */
     public int createInsertQueryFrom(T object) {
         try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.insertQuery)) {
-            logger.log(LogLevel.DEBUG, "Inserting object: " + object.toString());
-            return this.createRecordsFrom(statement, object);
+            for (int i = 0; i < this.columnSchemas.size(); i++) {
+                ColumnSchema columnSchema = this.columnSchemas.get(i);
+                this.setStatementValue(i+ 1, columnSchema, object, statement);
+                logger.log(LogLevel.DEBUG, "Current query: " + statement.toString());
+            }
+            return statement.executeUpdate();
         } catch (SQLException e) {
-            logger.log(LogLevel.ERROR, "Failed to create insert query from object: " + object);
+            logger.log(LogLevel.ERROR, "Failed to create insert query for object: " + object.toString());
         }
         return 0;
     }
+
 
     /**
      * Implicitly assumes that the object has an id field of type String
@@ -125,56 +130,35 @@ public class QueryBuilder<T> {
      * @return The number of rows affected by the query
      */
     public int createUpdateQueryFrom(T object) {
-        String id = null;
         try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.updateQuery)) {
             for (int i = 0; i < this.columnSchemas.size(); i++) {
                 ColumnSchema columnSchema = this.columnSchemas.get(i);
                 this.setStatementValue(i+ 1, columnSchema, object, statement);
-                logger.log(LogLevel.ERROR, "Update query: " + statement.toString());
+                logger.log(LogLevel.DEBUG, "Current query: " + statement.toString());
                 if (columnSchema.column.type().equals(ColumnType.ID)) {
-                   id = columnSchema.field.get(object).toString();
+                    this.setStatementValue(columnSchemas.size() + 1, columnSchema, object, statement);
                 }
             }
-            // TODO: This is a hack, implement way to get field from ClassSchema by ColumnType
-            if (id != null) {
-                statement.setString(this.columnSchemas.size() + 1, id);
-                logger.log(LogLevel.DEBUG, "Created update query: " + this.updateQuery);
-                return this.createRecordsFrom(statement, object);
-            } else {
-                throw new NullPointerException("No id found for object: " + object);
-            }
-        } catch (SQLException | IllegalAccessException e) {
-            logger.log(LogLevel.ERROR, "Failed to create update query for id: " + id);
-
+            return statement.executeUpdate();
+        } catch (SQLException e) {
+            logger.log(LogLevel.ERROR, "Failed to create update query for object: " + object.toString());
         }
         return 0;
     }
 
 
     /**
-     * Implicitly assumes that the object has an id field of type String
-     * @param object The object to delete
+     * Takes a UUID and deletes the object from the database
+     * @param uuid The id of the object to delete
      * @return The number of rows affected by the query
      */
-    public int createDeleteQueryFrom(T object) {
-        String id = null;
+    public int createDeleteQueryFrom(String uuid) {
+        logger.log(LogLevel.DEBUG, "Starting delete query for uuid: " + uuid);
         try (PreparedStatement statement = this.pool.getConnection().prepareStatement(this.deleteQuery)) {
-            for (ColumnSchema columnSchema : this.columnSchemas) {
-                if (columnSchema.column.type().equals(ColumnType.ID)) {
-                    id = columnSchema.field.get(object).toString();
-                }
-            }
-            // TODO: This is a hack, implement way to get field from ClassSchema by ColumnType
-            if (id != null) {
-                statement.setString(1, id);
-                logger.log(LogLevel.DEBUG, "Created delete query: " + this.deleteQuery);
-                statement.executeUpdate();
-            } else {
-                throw new NullPointerException( "No id found for object: " + object);
-            }
-
-        } catch (SQLException | IllegalAccessException  e) {
-            logger.log(LogLevel.ERROR, "Failed to create delete query for id: " + id);
+            statement.setString(1, uuid);
+            return statement.executeUpdate();
+        } catch (SQLException e) {
+            logger.log(LogLevel.ERROR, "Failed to create delete query for id: " + uuid);
         }
         return 0;
     }
@@ -183,6 +167,7 @@ public class QueryBuilder<T> {
         for (int i = 0; i < this.columnSchemas.size(); i++) {
             ColumnSchema columnSchema = this.columnSchemas.get(i);
             this.setStatementValue(i + 1, columnSchema, object, statement);
+            logger.log(LogLevel.DEBUG, "Created statement: " + statement.toString());
         }
         return statement.executeUpdate();
     }
@@ -204,36 +189,21 @@ public class QueryBuilder<T> {
     private void setStatementValue(int index, ColumnSchema columnSchema, T object, PreparedStatement statement) {
         try {
             switch (columnSchema.column.type()) {
+                case ID:
                 case STRING:
                     statement.setString(index, (String) columnSchema.field.get(object));
-                    break;
-                case ID:
-                    String id = (String) columnSchema.field.get(object);
-                    if (id == null || "".equals(id)) {
-                        statement.setString(index, UUID.randomUUID().toString());
-                    } else {
-                        statement.setString(index, (String) columnSchema.field.get(object));
-                    }
                     break;
                 case INT:
                     statement.setInt(index, (int) columnSchema.field.get(object));
                     break;
-                case DATE:
-                    // TODO later
-                    break;
-                case FLOAT:
-                    statement.setFloat(index, (Float) columnSchema.field.get(object));
-                    break;
-                case DOUBLE:
-                    statement.setDouble(index, (Double) columnSchema.field.get(object));
-                    break;
                 case BOOLEAN:
                     statement.setBoolean(index, (Boolean) columnSchema.field.get(object));
                     break;
+                default:
             }
             logger.log(LogLevel.DEBUG, "Set statement value: " + columnSchema.field.get(object));
         } catch (IllegalAccessException | SQLException e) {
-            logger.log(LogLevel.ERROR, "Failed to set statement value for field: " + columnSchema.field.getName());
+            logger.log(LogLevel.ERROR, "Failed to statement value for object: " + object + "\n  at index: " + index + "\n for column: " + columnSchema.column.name() + "\n with type: " + columnSchema.column.type());
         }
     }
 

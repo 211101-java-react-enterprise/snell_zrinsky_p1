@@ -4,6 +4,7 @@ import com.revature.p1.app.daos.BookDAO;
 import com.revature.p1.app.models.Book;
 
 import java.util.List;
+import java.util.UUID;
 
 // Takes parser, some configuration(not here - elsewhere)
 
@@ -20,8 +21,12 @@ public class BookService {
     }
 
     public List<Book> getBookById(String uuid) {
-        if(uuid.length() != 36) return null;
-        return bookDAO.getById(uuid);
+        try {
+            return bookDAO.getById(UUID.fromString(uuid).toString());
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+        return null;
     }
 
     public boolean insertBook(Book book) {
@@ -34,17 +39,16 @@ public class BookService {
         return bookDAO.update(book);
     }
 
-    public boolean deleteBook(Book book) {
-        if(!isBookValid(book)) return false;
-        return bookDAO.delete(book);
+    public boolean deleteBook(String uuid) {
+        try {
+            return bookDAO.delete(UUID.fromString(uuid).toString());
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+        return false;
     }
 
     public boolean isBookValid(Book book) {
-        if (book == null) return false;
-        if (book.getTitle() == null || book.getTitle().trim().equals("")) return false;
-        if (book.getAuthor() == null || book.getAuthor().trim().equals("")) return false;
-        if (book.getPageCount() == null || book.getPageCount() < 0) return false;
-
-        return true;
+        return (book != null);
     }
 }

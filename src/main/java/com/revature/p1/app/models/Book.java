@@ -10,17 +10,17 @@ import java.util.UUID;
 @Table(name = "books")
 public class Book {
     @Column(name = "id", type = ColumnType.ID, isUnique = true)
-    private String id;
+    public String id;
     @Column(name = "title", type = ColumnType.STRING)
-    private String title;
+    public String title;
     @Column(name = "author", type = ColumnType.STRING)
-    private String author;
+    public String author;
     @Column(name = "page_count", type = ColumnType.INT)
-    private int pageCount;
+    public int pageCount;
     @Column(name = "cover_image", type = ColumnType.STRING)
-    private String coverImage;
+    public String coverImage;
 
-    public Book(String id, String title, String author, Integer pageCount, String coverImage) {
+    public Book(String id, String title, String author, int pageCount, String coverImage) {
         this.id = id;
         this.title = title;
         this.author = author;
@@ -28,7 +28,7 @@ public class Book {
         this.coverImage = coverImage;
     }
 
-    public Book(String title, String author, Integer pageCount, String coverImage){
+    public Book(String title, String author, int pageCount, String coverImage){
         this.id = UUID.randomUUID().toString();
         this.title = title;
         this.author = author;
@@ -64,11 +64,11 @@ public class Book {
         this.author = author;
     }
 
-    public Integer getPageCount() {
+    public int getPageCount() {
         return pageCount;
     }
 
-    public void setPageCount(Integer pageCount) {
+    public void setPageCount(int pageCount) {
         this.pageCount = pageCount;
     }
 
@@ -78,5 +78,16 @@ public class Book {
 
     public void setCoverImage(String coverImage) {
         this.coverImage = coverImage;
+    }
+
+    @Override
+    public String toString() {
+        return "Book{" +
+                "id='" + id + '\'' +
+                ", title='" + title + '\'' +
+                ", author='" + author + '\'' +
+                ", pageCount=" + pageCount +
+                ", coverImage='" + coverImage + '\'' +
+                '}';
     }
 }
