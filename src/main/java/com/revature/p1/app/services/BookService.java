@@ -49,6 +49,9 @@ public class BookService {
     }
 
     public boolean isBookValid(Book book) {
-        return (book != null);
+        if(book.getTitle() == null || book.getTitle().isEmpty()) return false;
+        if(book.getAuthor() == null || book.getAuthor().isEmpty()) return false;
+        if(book.getCoverImage() == null || book.getCoverImage().isEmpty()) return false;
+        return book.getPageCount() > 0;
     }
 }
