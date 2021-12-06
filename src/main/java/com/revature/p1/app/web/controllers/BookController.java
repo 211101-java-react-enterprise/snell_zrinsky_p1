@@ -21,6 +21,7 @@ public class BookController {
     @Autowired
     public BookController() {
         try {
+            Class.forName("org.postgresql.Driver");
             QueryManager queryManager = QueryManager.configure("db.properties");
             QueryBuilder<Book> bookBuilder = queryManager.getQueryBuilder(Book.class);
             BookDAO bookDAO = new BookDAO(bookBuilder);
@@ -30,7 +31,7 @@ public class BookController {
         }
     }
 
-    @GetMapping(value = "")
+    @GetMapping(value = "/{uuid}")
     public BooksResponse getBooksById(@PathVariable String uuid) {
         System.out.println(uuid);
         List<Book> selected = bookService.getBookById(uuid);
@@ -40,7 +41,7 @@ public class BookController {
         return new BooksResponse(selectedBook.getId(), selectedBook.getTitle(), selectedBook.getAuthor(), selectedBook.getPageCount(), selectedBook.getCoverImage());
     }
 
-    @PostMapping(value = "")
+    @PostMapping(value = "/")
     public BooksResponse insertBook(@RequestBody BooksRequest booksRequest) {
         System.out.println("Book Request: " + booksRequest);
         // Retrieve info from booksRequest
