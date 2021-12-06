@@ -60,15 +60,15 @@ public class BookServiceTest {
         Assert.assertTrue("Expected book to be considered valid", result);
     }
 
-//    @Test
-//    public void test_insertBook_returnsFalse_givenBookWithNoAuthor(){
-//        Book nullAuthor = new Book("valid", null, 999, "valid");
-//        when(mockBookDAO.insert(any())).thenReturn(true);
-//
-//        boolean result = sut.insertBook(nullAuthor);
-//
-//        Assert.assertFalse("Expected the Insert method to fail", result);
-//    }
+    @Test
+    public void test_insertBook_returnsFalse_givenBookWithNoAuthor(){
+        Book nullAuthor = new Book("valid", null, 999, "valid");
+        when(mockBookDAO.insert(any())).thenReturn(true);
+
+        boolean result = sut.insertBook(nullAuthor);
+
+        Assert.assertFalse("Expected the Insert method to fail", result);
+    }
 
     @Test
     public void test_updateBook_returnsTrue_givenValidBook(){
@@ -80,18 +80,18 @@ public class BookServiceTest {
         Assert.assertTrue("Expected the book record to update", result);
     }
 
-//    @Test
-//    public void test_updateBook_returnsFalse_givenBookWithNoPageCount(){
-//        Book nullPageCount = new Book("valid", "valid", -42, "valid");
-//        when(mockBookDAO.update(any())).thenReturn(true);
-//
-//        boolean result = sut.updateBook(nullPageCount);
-//
-//        Assert.assertFalse("Expected book update to fail", result);
-//    }
+    @Test
+    public void test_updateBook_returnsFalse_givenBookWithNoPageCount(){
+        Book nullPageCount = new Book("valid", "valid", -42, "valid");
+        when(mockBookDAO.update(any())).thenReturn(true);
+
+        boolean result = sut.updateBook(nullPageCount);
+
+        Assert.assertFalse("Expected book update to fail", result);
+    }
 
     @Test
-    public void test_deleteBook_returnsTrue_givenValidBook(){
+    public void test_deleteBook_returnsTrue_givenValidId(){
         String validUuid = "7dfca934-4f83-42bd-b0fa-d6a676ff5a26";
         when(mockBookDAO.delete(any())).thenReturn(true);
 
@@ -100,15 +100,15 @@ public class BookServiceTest {
         Assert.assertTrue("Expected the book record to be deleted", result);
     }
 
-//    @Test
-//    public void test_deleteBook_returnsFalse_givenBookWithNoTitle(){
-//        Book emptyTitle = new Book("", "valid", 999, "valid");
-//        when(mockBookDAO.delete(any())).thenReturn(true);
-//
-//        boolean result = sut.deleteBook(emptyTitle);
-//
-//        Assert.assertFalse("Expected the delete method to fail", result);
-//    }
+    @Test
+    public void test_deleteBook_returnsFalse_givenInvalidId(){
+        String invalidUuid = "invalid";
+        when(mockBookDAO.delete(any())).thenReturn(true);
+
+        boolean result = sut.deleteBook(invalidUuid);
+
+        Assert.assertFalse("Expected the book record to be deleted", result);
+    }
 
     @Test
     public void test_isBookValid_returnsTrue_givenValidBook(){
@@ -118,14 +118,14 @@ public class BookServiceTest {
         Assert.assertTrue("Expected book to be considered valid", result);
     }
 
-//    @Test
-//    public void test_isBookValid_returnsFalse_givenBookWithNoTitle(){
-//        Book nullTitle = new Book(null, "valid", 999, "valid");
-//        Book emptyTitle = new Book("", "valid", 999, "valid");
-//        boolean nullResult = sut.isBookValid(nullTitle);
-//        boolean emptyResult = sut.isBookValid(emptyTitle);
-//
-//        Assert.assertFalse("Null title should provide false.", nullResult);
-//        Assert.assertFalse("Empty title should provide false.", emptyResult);
-//    }
+    @Test
+    public void test_isBookValid_returnsFalse_givenBookWithNoTitle(){
+        Book nullTitle = new Book(null, "valid", 999, "valid");
+        Book emptyTitle = new Book("", "valid", 999, "valid");
+        boolean nullResult = sut.isBookValid(nullTitle);
+        boolean emptyResult = sut.isBookValid(emptyTitle);
+
+        Assert.assertFalse("Null title should provide false.", nullResult);
+        Assert.assertFalse("Empty title should provide false.", emptyResult);
+    }
 }
